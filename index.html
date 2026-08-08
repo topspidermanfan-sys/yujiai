@@ -5,965 +5,990 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Yuji AI</title>
 <style>
-  :root{
-    --bg:#0B0B0D;
-    --panel:#18141A;
-    --panel-2:#221B20;
-    --panel-3:#0F0C0E;
-    --ink:#000000;
-    --paper:#EFE7D8;
-    --red:#FF2D2D;
-    --red-deep:#B4141A;
-    --red-light:#FFB4B0;
-    --text:#F3ECE6;
-    --muted:#9C8F92;
-    --danger:#FF5A5A;
-    --radius:4px;
-    --cut:14px;
-    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-    --sans: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    --display: "Arial Narrow", "Helvetica Neue Condensed", Impact, var(--sans);
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);}
-  #app{display:flex;height:100vh;min-height:560px;overflow:hidden;
-    background-image: radial-gradient(circle, rgba(255,45,45,0.16) 1px, transparent 1.5px);
-    background-size:13px 13px;
-  }
-  .panel-cut{clip-path:polygon(0 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%);}
-  /* ---------- Sidebar ---------- */
-  .sidebar{width:224px;flex-shrink:0;background:var(--panel-3);border-right:2px solid #000;
-    display:flex;flex-direction:column;padding:20px 14px;}
-  .brand{display:flex;flex-direction:column;gap:2px;margin-bottom:20px;padding:0 2px;}
-  .brand-row{display:flex;align-items:center;gap:10px;}
-  .brand-logo{width:34px;height:34px;flex-shrink:0;}
-  .brand-mark{font-family:var(--display);font-weight:800;font-size:22px;letter-spacing:1px;color:var(--text);
-    text-transform:uppercase;line-height:1;}
-  .brand-sub{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:6px;font-family:var(--mono);}
-  .plan-chip{display:inline-flex;align-items:center;gap:5px;margin-top:9px;padding:3px 9px 3px 7px;background:var(--red);
-    color:var(--paper);font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;
-    border:1.5px solid #000;width:fit-content;cursor:pointer;}
-  .plan-chip:hover{filter:brightness(1.1);}
-  .nav{display:flex;flex-direction:column;gap:5px;}
-  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;cursor:pointer;border:1.5px solid transparent;
-    color:var(--muted);font-size:13px;font-weight:700;letter-spacing:0.3px;text-transform:uppercase;user-select:none;}
-  .nav-item:hover{color:var(--text);border-color:#2a2226;}
-  .nav-item.active{background:var(--red);color:var(--paper);border-color:#000;box-shadow:2px 2px 0 #000;}
-  .nav-icon{width:15px;height:15px;flex-shrink:0;}
-  .sidebar-footer{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding:8px 4px;font-size:11px;color:var(--muted);font-family:var(--mono);}
-  .sidebar-footer .status-row{display:flex;align-items:center;gap:8px;}
-  .sidebar-footer .credit{font-size:10px;letter-spacing:0.3px;opacity:0.8;}
-  .sidebar-footer .credit b{color:var(--red-light);font-weight:700;}
-  .led{width:7px;height:7px;border-radius:50%;background:var(--red);box-shadow:0 0 7px var(--red);animation:blink 2.2s infinite;flex-shrink:0;}
-  @keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
-  /* ---------- Main ---------- */
-  .main{flex:1;display:flex;flex-direction:column;min-width:0;}
-  .view{flex:1;display:none;min-height:0;overflow:hidden;}
-  .view.active{display:flex;}
-  /* ---------- Chat view ---------- */
-  #view-chat{flex-direction:row;}
-  .chat-list{width:230px;flex-shrink:0;border-right:2px solid #000;display:flex;flex-direction:column;padding:16px 10px;overflow-y:auto;background:var(--panel-3);}
-  .new-chat-btn{display:flex;align-items:center;justify-content:center;gap:6px;background:var(--red);border:1.5px solid #000;box-shadow:2px 2px 0 #000;
-    color:var(--paper);padding:9px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;cursor:pointer;margin-bottom:12px;}
-  .new-chat-btn:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 #000;}
-  .new-chat-btn:active{transform:translate(1px,1px);box-shadow:0 0 0 #000;}
-  .chat-item{padding:9px 10px;cursor:pointer;font-size:12.5px;color:var(--muted);margin-bottom:3px;border:1.5px solid transparent;
-    display:flex;justify-content:space-between;align-items:center;gap:6px;}
-  .chat-item:hover{border-color:#2a2226;color:var(--text);}
-  .chat-item.active{background:var(--panel-2);color:var(--text);border-color:var(--red-deep);}
-  .chat-item-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
-  .chat-item-del{opacity:0;font-size:12px;color:var(--danger);}
-  .chat-item:hover .chat-item-del{opacity:0.7;}
-  .chat-item-del:hover{opacity:1 !important;}
-  .chat-main{flex:1;display:flex;flex-direction:column;min-width:0;}
-  .chat-thread{flex:1;overflow-y:auto;padding:26px 8%;display:flex;flex-direction:column;gap:16px;}
-  .chat-empty{margin:auto;text-align:center;color:var(--muted);max-width:360px;}
-  .chat-empty h2{color:var(--text);font-family:var(--display);font-size:20px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
-  .chat-empty p{font-size:13px;line-height:1.6;}
-  .msg{max-width:78%;padding:11px 15px;font-size:14px;line-height:1.55;white-space:pre-wrap;border:1.5px solid #000;}
-  .msg.user{align-self:flex-end;background:var(--red-deep);color:#fff;}
-  .msg.assistant{align-self:flex-start;background:var(--panel-2);color:var(--text);clip-path:polygon(0 0,100% 0,100% 100%,10px 100%,0 calc(100% - 10px));}
-  .msg.error{align-self:flex-start;background:rgba(255,90,90,0.12);color:var(--danger);border:1.5px solid var(--danger);font-family:var(--mono);font-size:12.5px;}
-  .msg.thinking{align-self:flex-start;color:var(--muted);font-family:var(--mono);font-size:12.5px;border-color:transparent;}
-  .composer{border-top:2px solid #000;padding:14px 8%;display:flex;gap:10px;align-items:flex-end;background:var(--panel-3);}
-  .composer textarea{flex:1;resize:none;background:var(--panel);border:1.5px solid #000;
-    color:var(--text);padding:11px 13px;font-size:14px;font-family:var(--sans);max-height:140px;outline:none;}
-  .composer textarea:focus{border-color:var(--red);}
-  .send-btn{background:var(--red);color:#fff;border:1.5px solid #000;box-shadow:2px 2px 0 #000;width:42px;height:42px;flex-shrink:0;
-    display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;font-weight:800;}
-  .send-btn:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 #000;}
-  .send-btn:disabled{opacity:0.4;cursor:default;transform:none;box-shadow:2px 2px 0 #000;}
-  /* ---------- Generic view padding ---------- */
-  .padded-view{flex-direction:column;padding:30px 5% 24px;overflow-y:auto;}
-  .view-header{margin-bottom:20px;}
-  .view-header h1{font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:24px;margin:0 0 6px;letter-spacing:0.5px;}
-  .view-header .rule{width:56px;height:5px;background:var(--red);margin-bottom:10px;}
-  .view-header p{color:var(--muted);font-size:13px;margin:0;max-width:640px;line-height:1.6;}
-  /* ---------- Keys view ---------- */
-  .key-form{display:flex;gap:10px;margin-bottom:18px;}
-  .key-form input{flex:1;max-width:280px;background:var(--panel);border:1.5px solid #000;
-    color:var(--text);padding:9px 12px;font-size:13px;outline:none;}
-  .key-form input:focus{border-color:var(--red);}
-  .btn{background:var(--panel-2);border:1.5px solid #000;box-shadow:2px 2px 0 #000;color:var(--text);
-    padding:9px 16px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.4px;cursor:pointer;}
-  .btn:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 #000;}
-  .btn:active{transform:translate(1px,1px);box-shadow:0 0 0 #000;}
-  .btn.primary{background:var(--red);color:#fff;}
-  .btn.danger{color:var(--danger);}
-  table.keys-table{width:100%;border-collapse:collapse;font-size:12.5px;}
-  table.keys-table th{text-align:left;color:var(--muted);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;
-    padding:8px 10px;border-bottom:2px solid #000;}
-  table.keys-table td{padding:11px 10px;border-bottom:1px solid #2a2226;vertical-align:middle;}
-  .key-val{font-family:var(--mono);color:var(--red-light);}
-  .empty-note{color:var(--muted);font-size:13px;padding:20px 4px;font-family:var(--mono);}
-  .warn-box{background:rgba(255,180,176,0.08);border:1.5px solid var(--red-light);color:var(--red-light);
-    padding:10px 14px;font-size:12px;line-height:1.6;margin-bottom:18px;max-width:640px;}
-  .limit-note{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:14px;}
-  .limit-note b{color:var(--red-light);}
-  .limit-hit{background:rgba(255,45,45,0.1);border:1.5px solid var(--red);color:var(--red-light);padding:10px 14px;
-    font-size:12.5px;margin-bottom:14px;max-width:640px;display:none;}
-  .limit-hit.show{display:block;}
-  .limit-hit a{color:var(--paper);font-weight:700;cursor:pointer;text-decoration:underline;}
-  /* ---------- Projects view ---------- */
-  .builder-box{background:var(--panel);border:1.5px solid #000;box-shadow:3px 3px 0 #000;padding:16px;margin-bottom:20px;}
-  .builder-box textarea{width:100%;background:var(--panel-3);border:1.5px solid #000;
-    color:var(--text);padding:11px 13px;font-size:13.5px;font-family:var(--sans);resize:none;outline:none;min-height:64px;margin-bottom:10px;}
-  .builder-box textarea:focus{border-color:var(--red);}
-  .templates-hint{font-size:11px;color:var(--muted);margin-top:8px;font-family:var(--mono);}
-  .build-log{font-family:var(--mono);font-size:11.5px;color:var(--red-light);background:var(--panel-3);border:1px solid #2a2226;
-    padding:10px 12px;margin-top:12px;display:none;max-height:120px;overflow-y:auto;line-height:1.7;}
-  .build-log.show{display:block;}
-  .build-log .line{opacity:0;animation:fadein .3s forwards;}
-  @keyframes fadein{to{opacity:1;}}
-  .projects-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;}
-  .project-card{background:var(--panel);border:1.5px solid #000;padding:14px;cursor:pointer;transition:transform .1s;
-    clip-path:polygon(0 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%);}
-  .project-card:hover{transform:translate(-1px,-1px);}
-  .project-swatch{width:100%;height:64px;margin-bottom:10px;}
-  .project-card h3{font-size:13px;margin:0 0 4px;color:var(--text);}
-  .project-card p{font-size:11px;color:var(--muted);margin:0;font-family:var(--mono);text-transform:uppercase;letter-spacing:0.5px;}
-  .game-stage{display:none;flex-direction:column;}
-  .game-stage.show{display:flex;}
-  .game-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:12px;flex-wrap:wrap;}
-  .game-top h2{font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:19px;margin:0 0 4px;}
-  .game-top .tagline{color:var(--muted);font-size:12.5px;max-width:440px;}
-  .game-scoreboard{font-family:var(--mono);font-size:13px;color:var(--red-light);display:flex;gap:16px;}
-  canvas{background:var(--panel-3);border:1.5px solid #000;max-width:100%;}
-  .game-controls{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
-  .game-hint{font-size:11.5px;color:var(--muted);margin-top:8px;font-family:var(--mono);}
-  /* ---------- Plan view ---------- */
-  .plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;max-width:920px;margin-bottom:22px;}
-  .plan-card{background:var(--panel);border:1.5px solid #000;box-shadow:4px 4px 0 #000;padding:20px;position:relative;
-    display:flex;flex-direction:column;gap:12px;}
-  .plan-card.featured{border-color:var(--red);box-shadow:4px 4px 0 var(--red);}
-  .plan-badge{position:absolute;top:-11px;right:14px;background:var(--red);color:var(--paper);font-family:var(--mono);
-    font-size:10px;font-weight:800;letter-spacing:0.6px;padding:3px 9px;border:1.5px solid #000;text-transform:uppercase;}
-  .plan-name{font-family:var(--display);font-weight:800;font-size:18px;text-transform:uppercase;letter-spacing:0.5px;}
-  .plan-price{font-family:var(--mono);font-size:26px;color:var(--red-light);font-weight:700;}
-  .plan-price span{font-size:12px;color:var(--muted);font-weight:400;}
-  .plan-features{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px;font-size:12.5px;color:var(--text);}
-  .plan-features li{display:flex;gap:8px;align-items:flex-start;}
-  .plan-features li::before{content:'▸';color:var(--red);flex-shrink:0;}
-  .plan-btn{margin-top:auto;}
-  .plan-current-tag{font-family:var(--mono);font-size:11px;color:var(--red-light);text-transform:uppercase;letter-spacing:0.5px;text-align:center;padding:9px;border:1.5px dashed var(--red-light);}
-  .plan-disclosure{max-width:700px;font-size:12px;color:var(--muted);line-height:1.7;background:var(--panel-3);border:1.5px solid #2a2226;padding:14px 16px;}
-  .plan-disclosure b{color:var(--red-light);}
-  /* ---------- Mobile ---------- */
-  @media (max-width:820px){
-    #app{flex-direction:column;}
-    .sidebar{width:100%;flex-direction:row;align-items:center;padding:10px 12px;border-right:none;border-bottom:2px solid #000;}
-    .brand{margin-bottom:0;margin-right:auto;}
-    .plan-chip{display:none;}
-    .nav{flex-direction:row;}
-    .sidebar-footer{display:none;}
-    #view-chat{flex-direction:column;}
-    .chat-list{width:100%;flex-direction:row;overflow-x:auto;border-right:none;border-bottom:2px solid #000;padding:10px;}
-    .chat-item{flex-shrink:0;}
-    .msg{max-width:90%;}
-  }
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root{
+  --bg: #0f0708;
+  --bg-elev: #180c0d;
+  --bg-elev-2: #221012;
+  --border: #3a1417;
+  --red: #ff3b3b;
+  --red-dim: #c22626;
+  --red-light: #ffb3ab;
+  --red-glow: rgba(255,59,59,0.35);
+  --text: #f6e9e8;
+  --text-muted: #b98a86;
+  --text-faint: #7a5451;
+  --mono: 'JetBrains Mono', monospace;
+  --display: 'Chakra Petch', sans-serif;
+  --body: 'Inter', sans-serif;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%;}
+body{
+  background:
+    radial-gradient(ellipse 900px 500px at 15% -10%, rgba(255,59,59,0.14), transparent 60%),
+    radial-gradient(ellipse 700px 500px at 100% 100%, rgba(255,59,59,0.08), transparent 60%),
+    var(--bg);
+  color:var(--text);
+  font-family:var(--body);
+  overflow:hidden;
+}
+.app{ display:flex; height:100vh; }
+
+/* SIDEBAR */
+.sidebar{
+  width:260px; min-width:260px;
+  background:var(--bg-elev);
+  border-right:1px solid var(--border);
+  display:flex; flex-direction:column;
+  padding:18px 14px;
+}
+.brand{ display:flex; align-items:center; gap:10px; padding:6px 6px 18px 6px; }
+.brand-mark{
+  width:38px; height:38px; border-radius:10px; overflow:hidden;
+  border:1px solid var(--border); flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(135deg,var(--red-dim),var(--bg-elev-2));
+  position:relative;
+}
+.brand-mark img{ width:100%; height:100%; object-fit:cover; display:block; }
+.brand-mark .fallback{
+  font-family:var(--display); font-weight:700; color:var(--red-light); font-size:16px;
+}
+.brand-name{ font-family:var(--display); font-weight:700; font-size:19px; letter-spacing:0.5px; }
+.brand-name span{ color:var(--red); }
+.brand-sub{ font-size:10.5px; color:var(--text-faint); letter-spacing:1.5px; text-transform:uppercase; margin-top:1px; }
+
+.nav{ display:flex; flex-direction:column; gap:4px; margin-bottom:16px; }
+.nav-btn{
+  display:flex; align-items:center; gap:10px;
+  background:transparent; border:1px solid transparent; color:var(--text-muted);
+  font-family:var(--body); font-size:13.5px; font-weight:500;
+  padding:9px 11px; border-radius:9px; cursor:pointer; text-align:left;
+  transition:background .15s, color .15s, border-color .15s;
+}
+.nav-btn svg{ width:16px; height:16px; flex-shrink:0; opacity:0.85; }
+.nav-btn:hover{ background:var(--bg-elev-2); color:var(--text); }
+.nav-btn.active{ background:linear-gradient(90deg, rgba(255,59,59,0.16), rgba(255,59,59,0.02)); color:var(--red-light); border-color:var(--border); }
+
+.side-divider{ height:1px; background:var(--border); margin:8px 0 12px 0; }
+.side-list-label{ font-size:10.5px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-faint); padding:0 8px; margin-bottom:8px; }
+.side-list{ flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:3px; padding-right:2px;}
+.side-list::-webkit-scrollbar{ width:5px; }
+.side-list::-webkit-scrollbar-thumb{ background:var(--border); border-radius:4px; }
+.side-item{
+  display:flex; align-items:center; justify-content:space-between; gap:6px;
+  padding:8px 10px; border-radius:8px; cursor:pointer; font-size:13px; color:var(--text-muted);
+  border:1px solid transparent;
+}
+.side-item:hover{ background:var(--bg-elev-2); color:var(--text); }
+.side-item.active{ background:var(--bg-elev-2); border-color:var(--border); color:var(--text); }
+.side-item .side-item-title{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+.side-item .del{ opacity:0; color:var(--text-faint); font-size:12px; cursor:pointer; padding:2px 4px; }
+.side-item:hover .del{ opacity:1; }
+.side-item .del:hover{ color:var(--red-light); }
+
+.new-btn{
+  margin-top:10px; display:flex; align-items:center; justify-content:center; gap:8px;
+  background:linear-gradient(135deg, var(--red), var(--red-dim));
+  color:#fff; border:none; border-radius:9px; padding:10px; font-family:var(--display);
+  font-weight:600; font-size:13px; letter-spacing:0.4px; cursor:pointer;
+  box-shadow:0 4px 18px -6px var(--red-glow);
+  transition:transform .12s, box-shadow .12s;
+}
+.new-btn:hover{ transform:translateY(-1px); box-shadow:0 6px 22px -6px var(--red-glow); }
+
+.credit{ margin-top:12px; text-align:center; font-size:10.5px; color:var(--text-faint); letter-spacing:0.3px; }
+.credit b{ color:var(--red-light); font-weight:600; }
+
+/* MAIN */
+.main{ flex:1; display:flex; flex-direction:column; min-width:0; }
+.topbar{
+  height:56px; border-bottom:1px solid var(--border); display:flex; align-items:center;
+  justify-content:space-between; padding:0 22px; flex-shrink:0;
+}
+.topbar-title{ font-family:var(--display); font-size:15.5px; font-weight:600; letter-spacing:0.3px; }
+.topbar-title span{ color:var(--text-faint); font-family:var(--body); font-weight:400; font-size:12.5px; margin-left:8px;}
+
+.view{ flex:1; overflow-y:auto; display:none; }
+.view.active{ display:flex; flex-direction:column; }
+
+/* CHAT VIEW */
+#view-chat{ padding:0; }
+.chat-scroll{ flex:1; overflow-y:auto; padding:28px 0 12px 0; }
+.chat-inner{ max-width:760px; margin:0 auto; display:flex; flex-direction:column; gap:18px; padding:0 26px; }
+.empty-state{ max-width:520px; margin:14vh auto; text-align:center; }
+.empty-state .ring{
+  width:64px; height:64px; margin:0 auto 18px auto; border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, var(--red-light), var(--red) 60%, var(--red-dim));
+  box-shadow:0 0 0 6px rgba(255,59,59,0.08), 0 0 40px -4px var(--red-glow);
+  animation:pulse 2.6s ease-in-out infinite;
+}
+@keyframes pulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.08); } }
+.empty-state h2{ font-family:var(--display); font-size:22px; margin-bottom:8px; }
+.empty-state p{ color:var(--text-muted); font-size:13.5px; line-height:1.6; }
+.suggestions{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:20px; }
+.chip{ border:1px solid var(--border); background:var(--bg-elev); color:var(--text-muted); font-size:12.5px; padding:8px 13px; border-radius:20px; cursor:pointer; }
+.chip:hover{ border-color:var(--red-dim); color:var(--red-light); }
+
+.msg{ display:flex; gap:12px; max-width:100%; }
+.msg .avatar{ width:28px; height:28px; border-radius:8px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-family:var(--display); font-size:12px; font-weight:700; margin-top:2px;}
+.msg.user .avatar{ background:var(--bg-elev-2); color:var(--text-muted); border:1px solid var(--border); }
+.msg.ai .avatar{ background:linear-gradient(135deg,var(--red-light),var(--red-dim)); color:#2a0808; }
+.msg .bubble-wrap{ flex:1; min-width:0; }
+.msg .name{ font-size:11.5px; color:var(--text-faint); margin-bottom:4px; font-weight:600; letter-spacing:0.3px; }
+.msg .bubble{ font-size:14.5px; line-height:1.65; color:var(--text); white-space:pre-wrap; word-wrap:break-word;}
+.msg.user .bubble{ color:var(--text); }
+.msg .bubble code{ background:var(--bg-elev-2); padding:1px 5px; border-radius:4px; font-family:var(--mono); font-size:13px; }
+.typing{ display:flex; gap:4px; padding:6px 0; }
+.typing span{ width:6px; height:6px; border-radius:50%; background:var(--red); opacity:.4; animation:blink 1.2s infinite; }
+.typing span:nth-child(2){ animation-delay:.2s; } .typing span:nth-child(3){ animation-delay:.4s; }
+@keyframes blink{ 0%,100%{ opacity:.25;} 50%{ opacity:.9;} }
+
+.composer{ border-top:1px solid var(--border); padding:16px 26px 20px 26px; }
+.composer-inner{ max-width:760px; margin:0 auto; display:flex; align-items:flex-end; gap:10px;
+  background:var(--bg-elev); border:1px solid var(--border); border-radius:14px; padding:10px 10px 10px 16px; }
+.composer-inner:focus-within{ border-color:var(--red-dim); box-shadow:0 0 0 3px rgba(255,59,59,0.08); }
+textarea#chat-input{
+  flex:1; background:transparent; border:none; outline:none; resize:none; color:var(--text);
+  font-family:var(--body); font-size:14px; line-height:1.5; max-height:160px; padding:6px 0;
+}
+textarea#chat-input::placeholder{ color:var(--text-faint); }
+.send-btn{
+  background:linear-gradient(135deg, var(--red), var(--red-dim)); border:none; color:#fff;
+  width:34px; height:34px; border-radius:9px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; transition:transform .1s;
+}
+.send-btn:hover{ transform:scale(1.05); }
+.send-btn:disabled{ opacity:.4; cursor:default; transform:none; }
+.disclaimer{ text-align:center; font-size:10.5px; color:var(--text-faint); margin-top:10px; }
+
+/* SECTION HEADERS (projects/keys) */
+.section{ padding:30px 34px 40px 34px; overflow-y:auto; }
+.section-head{ margin-bottom:24px; }
+.section-head h1{ font-family:var(--display); font-size:24px; margin-bottom:6px; }
+.section-head p{ color:var(--text-muted); font-size:13.5px; max-width:640px; line-height:1.6; }
+
+/* PROJECTS */
+.new-project-card{
+  background:var(--bg-elev); border:1px solid var(--border); border-radius:14px; padding:18px;
+  margin-bottom:26px;
+}
+.new-project-card label{ font-size:11.5px; text-transform:uppercase; letter-spacing:1px; color:var(--text-faint); display:block; margin-bottom:8px;}
+.new-project-card input, .new-project-card textarea{
+  width:100%; background:var(--bg-elev-2); border:1px solid var(--border); border-radius:9px; color:var(--text);
+  font-family:var(--body); font-size:13.5px; padding:10px 12px; outline:none;
+}
+.new-project-card input{ margin-bottom:12px; }
+.new-project-card textarea{ resize:vertical; min-height:64px; margin-bottom:14px; }
+.new-project-card input:focus, .new-project-card textarea:focus{ border-color:var(--red-dim); }
+.gen-btn{
+  background:linear-gradient(135deg, var(--red), var(--red-dim)); border:none; color:#fff; font-family:var(--display);
+  font-weight:600; font-size:13px; letter-spacing:0.4px; padding:11px 20px; border-radius:9px; cursor:pointer;
+  box-shadow:0 4px 18px -6px var(--red-glow); display:inline-flex; align-items:center; gap:8px;
+}
+.gen-btn:disabled{ opacity:.5; cursor:default; }
+
+.projects-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:16px; }
+.project-card{ background:var(--bg-elev); border:1px solid var(--border); border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:8px; cursor:pointer; transition:border-color .15s; }
+.project-card:hover{ border-color:var(--red-dim); }
+.project-card h3{ font-family:var(--display); font-size:15px; }
+.project-card p{ font-size:12.5px; color:var(--text-muted); line-height:1.5; flex:1;
+  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+.project-card .tag{ font-size:10.5px; color:var(--red-light); text-transform:uppercase; letter-spacing:0.6px; }
+
+.game-modal-overlay{ position:fixed; inset:0; background:rgba(6,2,2,0.72); backdrop-filter:blur(3px); display:none; align-items:center; justify-content:center; z-index:50; padding:30px;}
+.game-modal-overlay.active{ display:flex; }
+.game-modal{ background:var(--bg-elev); border:1px solid var(--border); border-radius:16px; width:min(920px,100%); max-height:90vh; display:flex; flex-direction:column; overflow:hidden;}
+.game-modal-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--border); }
+.game-modal-head h3{ font-family:var(--display); font-size:15px; }
+.game-modal-head .close-x{ cursor:pointer; color:var(--text-faint); font-size:20px; line-height:1; padding:2px 6px;}
+.game-modal-head .close-x:hover{ color:var(--red-light); }
+.game-frame-wrap{ flex:1; background:#000; }
+.game-frame-wrap iframe{ width:100%; height:100%; border:none; min-height:420px; }
+.game-status{ padding:40px; text-align:center; color:var(--text-muted); font-size:13.5px; }
+
+/* API KEYS */
+.key-card{ background:var(--bg-elev); border:1px solid var(--border); border-radius:14px; padding:18px 20px; margin-bottom:22px; }
+.key-card .warn{ font-size:12px; color:var(--text-faint); line-height:1.6; margin-top:6px; }
+.key-row{ display:flex; align-items:center; gap:10px; background:var(--bg-elev-2); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:10px; }
+.key-row .k-name{ font-size:13px; font-weight:600; min-width:110px; }
+.key-row .k-val{ font-family:var(--mono); font-size:13px; color:var(--red-light); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.key-row .k-date{ font-size:11px; color:var(--text-faint); min-width:90px; text-align:right; }
+.key-row button{ background:transparent; border:1px solid var(--border); color:var(--text-muted); font-size:11.5px; padding:6px 10px; border-radius:7px; cursor:pointer; }
+.key-row button:hover{ border-color:var(--red-dim); color:var(--red-light); }
+.new-key-form{ display:flex; gap:10px; margin-top:16px; }
+.new-key-form input{ flex:1; background:var(--bg-elev-2); border:1px solid var(--border); border-radius:9px; color:var(--text); padding:10px 12px; font-size:13.5px; outline:none; }
+.new-key-form input:focus{ border-color:var(--red-dim); }
+.empty-mini{ color:var(--text-faint); font-size:13px; padding:20px 0; text-align:center; }
+
+@media (max-width: 760px){
+  .sidebar{ position:fixed; z-index:40; height:100%; transform:translateX(-100%); transition:transform .2s; }
+  .sidebar.open{ transform:translateX(0); }
+  .menu-toggle{ display:flex !important; }
+}
+.menu-toggle{ display:none; background:transparent; border:1px solid var(--border); color:var(--text-muted); width:34px; height:34px; border-radius:8px; align-items:center; justify-content:center; cursor:pointer; }
+
+/* NEW badge - side to side wiggle, game-UI style */
+.new-badge{
+  display:inline-block; margin-left:auto; background:linear-gradient(135deg,var(--red-light),var(--red));
+  color:#2a0808; font-family:var(--display); font-size:9px; font-weight:700; letter-spacing:0.6px;
+  padding:2px 7px; border-radius:20px; animation:newWiggle 1.3s ease-in-out infinite;
+  box-shadow:0 0 8px -1px var(--red-glow);
+}
+@keyframes newWiggle{ 0%,100%{ transform:translateX(0);} 25%{ transform:translateX(-3px);} 75%{ transform:translateX(3px);} }
+
+/* CUSTOMIZE */
+.customize-card{ background:var(--bg-elev); border:1px solid var(--border); border-radius:14px; padding:20px; margin-bottom:20px; }
+.customize-card h4{ font-family:var(--display); font-size:14px; margin-bottom:4px; }
+.customize-card .desc{ font-size:12px; color:var(--text-faint); margin-bottom:14px; }
+.swatch-row{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+.swatch{ width:38px; height:38px; border-radius:11px; cursor:pointer; border:2px solid transparent; position:relative; flex-shrink:0; transition:transform .1s; }
+.swatch:hover{ transform:translateY(-2px); }
+.swatch.selected{ border-color:#fff; }
+.swatch-custom{ display:flex; align-items:center; gap:8px; }
+.swatch-custom input[type=color]{ width:38px; height:38px; border:none; border-radius:11px; background:transparent; cursor:pointer; padding:0; }
+.toggle-row{ display:flex; gap:10px; }
+.toggle-opt{ flex:1; text-align:center; padding:12px; border-radius:10px; border:1px solid var(--border); background:var(--bg-elev-2); cursor:pointer; font-size:13px; color:var(--text-muted); }
+.toggle-opt.selected{ border-color:var(--red-dim); color:var(--red-light); background:rgba(255,59,59,0.08); }
+.slider-row{ display:flex; align-items:center; gap:14px; }
+.slider-row input[type=range]{ flex:1; accent-color:var(--red); }
+.reset-link{ font-size:12px; color:var(--text-faint); cursor:pointer; text-decoration:underline; margin-top:4px; display:inline-block; }
+.reset-link:hover{ color:var(--red-light); }
+
+/* UPDATE LOG MODAL */
+.update-modal .game-modal{ width:min(480px,100%); }
+.update-log-entry{ padding:14px 0; border-bottom:1px solid var(--border); }
+.update-log-entry:last-child{ border-bottom:none; }
+.update-log-entry .v{ font-family:var(--display); font-size:13px; color:var(--red-light); margin-bottom:6px; }
+.update-log-entry .v .date{ color:var(--text-faint); font-family:var(--body); font-weight:400; margin-left:8px; font-size:11px; }
+.update-log-entry ul{ padding-left:18px; }
+.update-log-entry li{ font-size:12.5px; color:var(--text-muted); line-height:1.6; }
+.update-modal-body{ padding:6px 20px 20px 20px; max-height:60vh; overflow-y:auto; }
+.update-modal-foot{ padding:14px 20px; border-top:1px solid var(--border); }
+.update-modal-foot button{ width:100%; }
 </style>
 </head>
 <body>
-<div id="app">
-  <aside class="sidebar">
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
     <div class="brand">
-      <div class="brand-row">
-        <svg class="brand-logo" viewBox="0 0 48 48">
-          <polygon points="24,2 29,17 45,17 32,27 37,43 24,33 11,43 16,27 3,17 19,17"
-            fill="#FF2D2D" stroke="#000" stroke-width="2" stroke-linejoin="round"/>
-          <text x="24" y="30" text-anchor="middle" font-family="Arial Narrow, sans-serif" font-weight="800" font-size="17" fill="#0B0B0D">Y</text>
-        </svg>
-        <div class="brand-mark">Yuji AI</div>
+      <div class="brand-mark">
+        <img src="https://tse1.explicit.bing.net/th/id/OIP.IIJ-tHUhO_AtkPikgk2mUgHaHa?r=0&rs=1&pid=ImgDetMain&o=7&rm=3"
+             alt="Yuji AI logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <div class="fallback" style="display:none;">Y</div>
       </div>
-      <div class="brand-sub">chat · keys · builds</div>
-      <div class="plan-chip" id="planChip" data-view-target="plan">free plan · upgrade</div>
+      <div>
+        <div class="brand-name">Yuji <span>AI</span></div>
+        <div class="brand-sub">by Eggfr</div>
+      </div>
     </div>
-    <nav class="nav">
-      <div class="nav-item active" data-view="chat">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v12H8l-4 4V4z"/></svg>
-        Chat
-      </div>
-      <div class="nav-item" data-view="keys">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="12" r="4"/><path d="M12 12h9M17 12v4M20 12v3"/></svg>
-        API Keys
-      </div>
-      <div class="nav-item" data-view="projects">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="7" height="7"/><rect x="13" y="4" width="7" height="7"/><rect x="4" y="13" width="7" height="7"/><rect x="13" y="13" width="7" height="7"/></svg>
+
+    <div class="nav">
+      <button class="nav-btn active" data-tab="chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        Chats
+      </button>
+      <button class="nav-btn" data-tab="projects">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
         Projects
-      </div>
-      <div class="nav-item" data-view="plan">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 6.6L21 9l-5 4.6L17.5 21 12 17.3 6.5 21 8 13.6 3 9l6.6-.4z"/></svg>
-        Plan
-      </div>
-    </nav>
-    <div class="sidebar-footer">
-      <div class="status-row"><span class="led"></span> system nominal</div>
-      <div class="credit">all credit to <b>Eggfr</b></div>
+      </button>
+      <button class="nav-btn" data-tab="keys">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.6 12.4 20 3l2 2-1.5 1.5L22 8l-2 2-1.5-1.5L17 10"/></svg>
+        API Keys
+      </button>
+      <button class="nav-btn" data-tab="customize" style="display:flex;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="19" cy="17" r="2.5"/><circle cx="5" cy="17" r="2.5"/><path d="M13.5 9v3M13.5 12l4.2 3.3M13.5 12l-6.2 3.3"/></svg>
+        Customize
+        <span class="new-badge">NEW</span>
+      </button>
     </div>
+
+    <div class="side-divider"></div>
+    <div id="sidebar-list-area" style="flex:1; display:flex; flex-direction:column; min-height:0;">
+      <div class="side-list-label">Recent chats</div>
+      <div class="side-list" id="chat-list"></div>
+      <button class="new-btn" id="new-chat-btn">+ New chat</button>
+    </div>
+
+    <div class="credit">All credit to <b>Eggfr</b> · Yuji AI</div>
   </aside>
+
+  <!-- MAIN -->
   <main class="main">
-    <!-- CHAT -->
-    <section id="view-chat" class="view active">
-      <div class="chat-list">
-        <button class="new-chat-btn" id="newChatBtn">+ New chat</button>
-        <div class="limit-hit" id="chatLimitHit">Free plan tops out at <b>3 saved chats</b>. <a data-view-target="plan">Upgrade for more →</a></div>
-        <div id="chatListItems"></div>
+    <div class="topbar">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <button class="menu-toggle" id="menu-toggle">☰</button>
+        <div class="topbar-title" id="topbar-title">Yuji AI <span>chat</span></div>
       </div>
-      <div class="chat-main">
-        <div class="chat-thread" id="chatThread">
-          <div class="chat-empty">
-            <h2>Start a thread</h2>
-            <p>Messages here are answered live and saved to your account automatically. Pick up any thread from the list on the left.</p>
+    </div>
+
+    <!-- CHAT VIEW -->
+    <section class="view active" id="view-chat">
+      <div class="chat-scroll" id="chat-scroll">
+        <div class="chat-inner" id="chat-inner">
+          <div class="empty-state" id="chat-empty">
+            <div class="ring"></div>
+            <h2>Talk to Yuji AI</h2>
+            <p>Ask anything, brainstorm, get help writing or coding. Your chats save automatically.</p>
+            <div class="suggestions">
+              <div class="chip" data-fill="Give me 5 ideas for a 2D platformer game">Game ideas</div>
+              <div class="chip" data-fill="Explain how neural networks learn, simply">Explain something</div>
+              <div class="chip" data-fill="Help me write a short bio for my profile">Write for me</div>
+            </div>
           </div>
         </div>
-        <div class="composer">
-          <textarea id="chatInput" rows="1" placeholder="Message Yuji AI…"></textarea>
-          <button class="send-btn" id="sendBtn">↑</button>
+      </div>
+      <div class="composer">
+        <div class="composer-inner">
+          <textarea id="chat-input" rows="1" placeholder="Message Yuji AI..."></textarea>
+          <button class="send-btn" id="send-btn" title="Send">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>
+          </button>
         </div>
+        <div class="disclaimer">Yuji AI can make mistakes. Chats are saved to your browser only.</div>
       </div>
     </section>
-    <!-- KEYS -->
-    <section id="view-keys" class="view padded-view">
-      <div class="view-header">
-        <h1>API Keys</h1>
-        <div class="rule"></div>
-        <p>Issue named credentials for this workspace. Each one is generated locally and stored to your account.</p>
+
+    <!-- PROJECTS VIEW -->
+    <section class="view" id="view-projects">
+      <div class="section">
+        <div class="section-head">
+          <h1>Projects</h1>
+          <p>Describe a game and Yuji AI builds a playable browser version — like a tiny AI game studio. Great for prototypes, not a Roblox replacement (no multiplayer, no 3D engine — it generates self-contained HTML5/JS games).</p>
+        </div>
+
+        <div class="new-project-card">
+          <label>Project name</label>
+          <input type="text" id="proj-name" placeholder="e.g. Neon Runner">
+          <label>Describe the game</label>
+          <textarea id="proj-desc" placeholder="e.g. A fast side-scrolling runner where you dodge red obstacles, score goes up over time, press space to jump, gets faster over time, game over on hit with a restart button."></textarea>
+          <button class="gen-btn" id="gen-btn">✦ Generate game</button>
+        </div>
+
+        <div class="side-list-label" style="margin-bottom:14px;">Your projects</div>
+        <div class="projects-grid" id="projects-grid"></div>
       </div>
-      <div class="warn-box">These are preview credentials, not a live multi-tenant API service — this page has no backend of its own. Wire the key check into your own server if you want it to actually gate requests; the format and storage here are ready to plug in.</div>
-      <div class="limit-hit" id="keyLimitHit">Free plan allows <b>1 key</b>. <a data-view-target="plan">Upgrade for more →</a></div>
-      <div class="key-form">
-        <input id="keyNameInput" type="text" placeholder='Key name, e.g. "prod-bot"' maxlength="40">
-        <button class="btn primary" id="genKeyBtn">Generate key</button>
-      </div>
-      <table class="keys-table" id="keysTable">
-        <thead><tr><th>Name</th><th>Key</th><th>Created</th><th></th></tr></thead>
-        <tbody id="keysTableBody"></tbody>
-      </table>
-      <div class="empty-note" id="keysEmptyNote" style="display:none;">No keys yet. Generate one above.</div>
     </section>
-    <!-- PROJECTS -->
-    <section id="view-projects" class="view padded-view">
-      <div class="view-header">
-        <h1>Build a game</h1>
-        <div class="rule"></div>
-        <p>Describe it in a sentence — Yuji AI designs the theme and drops it into a working, playable engine.</p>
-      </div>
-      <div class="limit-hit" id="projLimitHit">Free plan saves up to <b>2 projects</b>. <a data-view-target="plan">Upgrade for more →</a></div>
-      <div class="builder-box">
-        <textarea id="projectPrompt" placeholder="e.g. a neon paddle game where you bounce a comet, or a runner where a fox jumps cactus at night"></textarea>
-        <button class="btn primary" id="buildBtn">Build project</button>
-        <div class="templates-hint">Engines available: catcher · breakout · pong · runner — Yuji AI picks the closest fit and themes it to your prompt.</div>
-        <div class="build-log" id="buildLog"></div>
-      </div>
-      <div id="gameStage" class="game-stage">
-        <div class="game-top">
-          <div>
-            <h2 id="gameTitle"></h2>
-            <div class="tagline" id="gameTagline"></div>
+
+    <!-- API KEYS VIEW -->
+    <section class="view" id="view-keys">
+      <div class="section">
+        <div class="section-head">
+          <h1>API Keys</h1>
+          <p>Create keys to identify apps that call Yuji AI.</p>
+        </div>
+
+        <div class="key-card">
+          <strong style="font-size:13.5px;">Connect Yuji AI (make chat actually work here)</strong>
+          <div class="warn">This site runs entirely in your browser with no server, so it needs a real Anthropic API key to talk to an AI when it's not opened inside Claude's own preview. Get a key at <span style="color:var(--red-light)">console.anthropic.com</span>, paste it below, and it's stored only in your browser. Note: exposing an API key in front-end code means anyone who inspects this page could see it — fine for personal/local use, not for a public deployed site.</div>
+          <div class="new-key-form">
+            <input type="password" id="user-key-input" placeholder="sk-ant-...">
+            <input type="text" id="user-model-input" placeholder="model id" style="max-width:220px;" value="claude-sonnet-4-5">
+            <button class="gen-btn" id="save-user-key-btn">Save</button>
           </div>
-          <div class="game-scoreboard" id="gameScoreboard"></div>
+          <div class="warn" id="user-key-status" style="margin-top:8px;"></div>
         </div>
-        <canvas id="gameCanvas" width="640" height="360"></canvas>
-        <div class="game-hint" id="gameHint"></div>
-        <div class="game-controls">
-          <button class="btn primary" id="playBtn">Play</button>
-          <button class="btn" id="resetBtn">Reset</button>
-          <button class="btn" id="backToGridBtn">← All projects</button>
+
+        <div class="key-card">
+          <strong style="font-size:13.5px;">Demo key manager</strong>
+          <div class="warn">These keys below are separate — a front-end demo for the idea of "Yuji AI keys" (e.g. to hand out to your own users). There's no backend, so they don't grant real access to anything by themselves. A real key system needs a server to issue, store, and check keys.</div>
+          <div class="new-key-form">
+            <input type="text" id="key-name-input" placeholder="Key name, e.g. My Game Server">
+            <button class="gen-btn" id="gen-key-btn">Generate key</button>
+          </div>
         </div>
-      </div>
-      <div id="projectsGridWrap">
-        <h1 style="font-family:var(--mono);font-size:13px;color:var(--muted);margin:24px 0 12px;text-transform:uppercase;letter-spacing:1px;">saved projects</h1>
-        <div class="projects-grid" id="projectsGrid"></div>
-        <div class="empty-note" id="projectsEmptyNote" style="display:none;">Nothing built yet — describe a game above to start.</div>
+
+        <div id="keys-list"></div>
       </div>
     </section>
-    <!-- PLAN -->
-    <section id="view-plan" class="view padded-view">
-      <div class="view-header">
-        <h1>Choose your plan</h1>
-        <div class="rule"></div>
-        <p>Switching plans here is instant and free — it's a demo toggle, not a real charge. See the note below for what it takes to make it real.</p>
-      </div>
-      <div class="plan-grid" id="planGrid"></div>
-      <div class="plan-disclosure">
-        <b>Heads up:</b> this page can't process real payments on its own — it's a static front end with no server. Switching plans just changes a stored value in your account so you can see how the limits behave. To actually charge people, you'd add: a payment processor (Stripe or Paddle) to collect cards, a small backend to create checkout sessions and receive webhook events, and a database that flips the user's plan only after the processor confirms payment — never on the click alone.
+
+    <!-- CUSTOMIZE VIEW -->
+    <section class="view" id="view-customize">
+      <div class="section">
+        <div class="section-head">
+          <h1>Customize</h1>
+          <p>Make Yuji AI look like yours. Changes apply instantly and save to your browser.</p>
+        </div>
+
+        <div class="customize-card">
+          <h4>Accent color</h4>
+          <div class="desc">Pick a shade — everything from buttons to the glow updates live.</div>
+          <div class="swatch-row" id="swatch-row">
+            <div class="swatch" data-red="#ff3b3b" data-light="#ffb3ab" style="background:#ff3b3b;" title="Classic red"></div>
+            <div class="swatch" data-red="#ff0844" data-light="#ff9db5" style="background:#ff0844;" title="Crimson"></div>
+            <div class="swatch" data-red="#ff5e3a" data-light="#ffbfa8" style="background:#ff5e3a;" title="Ember"></div>
+            <div class="swatch" data-red="#ff4d79" data-light="#ffb3c6" style="background:#ff4d79;" title="Rose"></div>
+            <div class="swatch" data-red="#e0261f" data-light="#ff9d94" style="background:#e0261f;" title="Blood red"></div>
+            <div class="swatch-custom">
+              <input type="color" id="custom-color-input" value="#ff3b3b" title="Custom color">
+              <span style="font-size:12px; color:var(--text-faint);">Custom</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="customize-card">
+          <h4>Bubble &amp; card shape</h4>
+          <div class="desc">Choose how rounded chat bubbles, cards, and buttons feel.</div>
+          <div class="toggle-row" id="shape-toggle">
+            <div class="toggle-opt" data-shape="soft">Soft &amp; rounded</div>
+            <div class="toggle-opt" data-shape="sharp">Sharp &amp; angular</div>
+          </div>
+        </div>
+
+        <div class="customize-card">
+          <h4>Background glow</h4>
+          <div class="desc">Controls the intensity of the red glow behind the app.</div>
+          <div class="slider-row">
+            <span style="font-size:11px; color:var(--text-faint);">Subtle</span>
+            <input type="range" id="glow-slider" min="0" max="100" value="35">
+            <span style="font-size:11px; color:var(--text-faint);">Intense</span>
+          </div>
+        </div>
+
+        <div class="reset-link" id="reset-customize">Reset to default</div>
       </div>
     </section>
   </main>
 </div>
+
+<!-- Game modal -->
+<div class="game-modal-overlay" id="game-modal">
+  <div class="game-modal">
+    <div class="game-modal-head">
+      <h3 id="game-modal-title">Game</h3>
+      <div class="close-x" id="game-modal-close">✕</div>
+    </div>
+    <div class="game-frame-wrap" id="game-frame-wrap">
+      <div class="game-status" id="game-status">Generating your game…</div>
+    </div>
+  </div>
+</div>
+
+<!-- Update log modal -->
+<div class="game-modal-overlay update-modal" id="update-modal">
+  <div class="game-modal">
+    <div class="game-modal-head">
+      <h3>What's new in Yuji AI</h3>
+      <div class="close-x" id="update-modal-close">✕</div>
+    </div>
+    <div class="update-modal-body" id="update-log-body"></div>
+    <div class="update-modal-foot">
+      <button class="gen-btn" id="update-modal-ok" style="width:100%; justify-content:center;">Got it</button>
+    </div>
+  </div>
+</div>
+
 <script>
-/* ================= storage helpers ================= */
-async function sGet(key, def=null){
-  try{ const r = await window.storage.get(key,false); return r? JSON.parse(r.value) : def; }
-  catch(e){ return def; }
-}
-async function sSet(key,val){
-  try{ await window.storage.set(key, JSON.stringify(val), false); return true; }
-  catch(e){ console.error('storage set failed',e); return false; }
-}
-async function sDel(key){
-  try{ await window.storage.delete(key,false); }catch(e){}
-}
-function uid(){ return Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8); }
-function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-/* ================= nav ================= */
-function goToView(name){
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  const navEl = document.querySelector('.nav-item[data-view="'+name+'"]');
-  if(navEl) navEl.classList.add('active');
-  document.getElementById('view-'+name).classList.add('active');
-  if(name!=='projects') stopActiveGame();
-}
-document.querySelectorAll('.nav-item').forEach(el=>{
-  el.addEventListener('click', ()=> goToView(el.dataset.view));
-});
-document.addEventListener('click', (e)=>{
-  const t = e.target.closest('[data-view-target]');
-  if(t) goToView(t.dataset.viewTarget);
-});
-/* ================= Yuji AI API helper ================= */
-async function callYujiAI(messages){
-  try{
-    const resp = await fetch("/api/yujiai",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({ bot:"Yuji AI", max_tokens:1000, messages })
-    });
-    const data = await resp.json();
-    if(data && data.content){
-      return data.content.filter(b=>b.type==='text').map(b=>b.text).join('\n').trim();
-    }
-    return null;
-  }catch(e){ console.error('callYujiAI failed', e); return null; }
-}
-/* ================= PLAN ================= */
-const PLANS = {
-  free: { label:'Free', price:'$0', chats:3, keys:1, projects:2 },
-  pro: { label:'Pro', price:'$9', chats:25, keys:5, projects:15 },
-  legendary: { label:'Legendary', price:'$29', chats:Infinity, keys:Infinity, projects:Infinity }
-};
-async function getPlan(){ return await sGet('account:plan','free'); }
-async function setPlan(p){ await sSet('account:plan', p); await refreshPlanChip(); await refreshPlanView(); }
-async function refreshPlanChip(){
-  const plan = await getPlan();
-  document.getElementById('planChip').textContent = plan+' plan · '+(plan==='legendary'?'manage':'upgrade');
-  document.getElementById('planChip').onclick = showPlanSoon;
-}
-function showPlanSoon(){
-  alert('Im Working On This SOON!!!');
-}
-async function refreshPlanView(){
-  const plan = await getPlan();
-  const grid = document.getElementById('planGrid');
-  grid.innerHTML='';
-  Object.entries(PLANS).forEach(([key,p])=>{
-    const isCurrent = key===plan;
-    const card=document.createElement('div');
-    card.className='plan-card'+(key==='pro'?' featured':'');
-    card.innerHTML = `
-      ${key==='pro' ? '<div class="plan-badge">Most Popular</div>' : ''}
-      <div class="plan-name">${p.label}</div>
-      <div class="plan-price">${p.price}<span> /mo</span></div>
-      <ul class="plan-features">
-        <li>${p.chats===Infinity?'Unlimited':p.chats} saved chats</li>
-        <li>${p.keys===Infinity?'Unlimited':p.keys} API key${p.keys===1?'':'s'}</li>
-        <li>${p.projects===Infinity?'Unlimited':p.projects} saved projects</li>
-      </ul>
-      ${isCurrent ? '<div class="plan-current-tag">Current plan</div>' : `<button class="btn primary plan-btn" data-plan="${key}">Switch to ${p.label}</button>`}
-    `;
-    if(!isCurrent){
-      card.querySelector('[data-plan]').addEventListener('click', showPlanSoon);
-    }
-    grid.appendChild(card);
-  });
-}
-async function checkLimit(kind, indexKey){
-  const plan = await getPlan();
-  const limit = PLANS[plan][kind];
-  const idx = await sGet(indexKey, []);
-  return { ok: idx.length < limit, limit, count: idx.length };
-}
-/* ================= CHAT ================= */
-let currentChatId = null;
-const chatThread = document.getElementById('chatThread');
-const chatListItems = document.getElementById('chatListItems');
-const chatInput = document.getElementById('chatInput');
-const sendBtn = document.getElementById('sendBtn');
-async function refreshChatList(){
-  const idx = await sGet('chats:index', []);
-  idx.sort((a,b)=>b.updated-a.updated);
-  chatListItems.innerHTML='';
-  idx.forEach(c=>{
-    const el=document.createElement('div');
-    el.className='chat-item'+(c.id===currentChatId?' active':'');
-    el.innerHTML=`<span class="chat-item-title">${escapeHtml(c.title||'New chat')}</span><span class="chat-item-del" data-id="${c.id}">✕</span>`;
-    el.addEventListener('click',(e)=>{ if(e.target.classList.contains('chat-item-del')) return; openChat(c.id); });
-    el.querySelector('.chat-item-del').addEventListener('click', async(e)=>{
-      e.stopPropagation();
-      const idx2 = await sGet('chats:index', []);
-      await sSet('chats:index', idx2.filter(x=>x.id!==c.id));
-      await sDel('chats:msg:'+c.id);
-      if(currentChatId===c.id){ currentChatId=null; renderThread([]); }
-      refreshChatList();
-    });
-    chatListItems.appendChild(el);
-  });
-}
-function renderThread(messages){
-  if(!messages.length){
-    chatThread.innerHTML = `<div class="chat-empty"><h2>Start a thread</h2><p>Messages here are answered live and saved to your account automatically. Pick up any thread from the list on the left.</p></div>`;
-    return;
-  }
-  chatThread.innerHTML='';
-  messages.forEach(m=>{
-    const el=document.createElement('div');
-    el.className='msg '+m.role;
-    el.textContent=m.content;
-    chatThread.appendChild(el);
-  });
-  chatThread.scrollTop = chatThread.scrollHeight;
-}
-async function openChat(id){
-  currentChatId=id;
-  const msgs = await sGet('chats:msg:'+id, []);
-  renderThread(msgs);
-  refreshChatList();
-}
-document.getElementById('newChatBtn').addEventListener('click', async ()=>{
-  const check = await checkLimit('chats','chats:index');
-  const warn = document.getElementById('chatLimitHit');
-  if(!check.ok){ warn.classList.add('show'); return; }
-  warn.classList.remove('show');
-  currentChatId = uid();
-  const idx = await sGet('chats:index', []);
-  idx.push({id:currentChatId, title:'New chat', updated:Date.now()});
-  await sSet('chats:index', idx);
-  await sSet('chats:msg:'+currentChatId, []);
-  renderThread([]);
-  refreshChatList();
-  chatInput.focus();
-});
-async function sendMessage(){
-  const text = chatInput.value.trim();
-  if(!text) return;
-  if(!currentChatId){
-    const check = await checkLimit('chats','chats:index');
-    if(!check.ok){ document.getElementById('chatLimitHit').classList.add('show'); return; }
-    currentChatId = uid();
-    const idx = await sGet('chats:index', []);
-    idx.push({id:currentChatId, title:text.slice(0,40), updated:Date.now()});
-    await sSet('chats:index', idx);
-  }
-  chatInput.value='';
-  chatInput.style.height='auto';
-  const msgs = await sGet('chats:msg:'+currentChatId, []);
-  msgs.push({role:'user', content:text});
-  renderThread(msgs);
-  const thinkingEl=document.createElement('div');
-  thinkingEl.className='msg thinking';
-  thinkingEl.textContent='…';
-  chatThread.appendChild(thinkingEl);
-  chatThread.scrollTop = chatThread.scrollHeight;
-  sendBtn.disabled=true;
-  const apiMessages = msgs.map(m=>({role:m.role, content:m.content}));
-  const reply = await callYujiAI(apiMessages);
-  thinkingEl.remove();
-  sendBtn.disabled=false;
-  if(reply){
-    msgs.push({role:'assistant', content:reply});
-  } else {
-    msgs.push({role:'error', content:'Could not reach the model just now. Your message was saved — try sending again.'});
-  }
-  await sSet('chats:msg:'+currentChatId, msgs);
-  const idx = await sGet('chats:index', []);
-  const entry = idx.find(c=>c.id===currentChatId);
-  if(entry){ entry.updated=Date.now(); if(entry.title==='New chat') entry.title=text.slice(0,40); }
-  await sSet('chats:index', idx);
-  renderThread(msgs);
-  refreshChatList();
-}
-sendBtn.addEventListener('click', sendMessage);
-chatInput.addEventListener('keydown', e=>{
-  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }
-});
-chatInput.addEventListener('input', ()=>{
-  chatInput.style.height='auto';
-  chatInput.style.height=Math.min(chatInput.scrollHeight,140)+'px';
-});
-/* ================= API KEYS ================= */
-function makeKey(){
-  const chars='abcdefghijklmnopqrstuvwxyz0123456789';
-  let s='';
-  for(let i=0;i<32;i++) s+=chars[Math.floor(Math.random()*chars.length)];
-  return 'yuji_sk_'+s;
-}
-async function refreshKeys(){
-  const keys = await sGet('keys:index', []);
-  const tbody = document.getElementById('keysTableBody');
-  const emptyNote = document.getElementById('keysEmptyNote');
-  tbody.innerHTML='';
-  emptyNote.style.display = keys.length? 'none':'block';
-  keys.slice().reverse().forEach(k=>{
-    const tr=document.createElement('tr');
-    const masked = k.key.slice(0,12)+'••••••••••••••••••••';
-    tr.innerHTML = `
-      <td>${escapeHtml(k.name)}</td>
-      <td class="key-val">${masked}</td>
-      <td>${new Date(k.created).toLocaleDateString()}</td>
-      <td style="white-space:nowrap;">
-        <button class="btn" data-act="toggle">Show</button>
-        <button class="btn" data-act="copy">Copy</button>
-        <button class="btn danger" data-act="revoke">Revoke</button>
-      </td>`;
-    const tdKey = tr.querySelector('.key-val');
-    tr.querySelector('[data-act="toggle"]').addEventListener('click', (e)=>{
-      const showing = tdKey.textContent === k.key;
-      tdKey.textContent = showing ? masked : k.key;
-      e.target.textContent = showing ? 'Show' : 'Hide';
-    });
-    tr.querySelector('[data-act="copy"]').addEventListener('click', (e)=>{
-      navigator.clipboard.writeText(k.key).then(()=>{
-        const old=e.target.textContent; e.target.textContent='Copied'; setTimeout(()=>e.target.textContent=old,1200);
-      });
-    });
-    tr.querySelector('[data-act="revoke"]').addEventListener('click', async ()=>{
-      const cur = await sGet('keys:index', []);
-      await sSet('keys:index', cur.filter(x=>x.id!==k.id));
-      refreshKeys();
-    });
-    tbody.appendChild(tr);
-  });
-}
-document.getElementById('genKeyBtn').addEventListener('click', async ()=>{
-  const check = await checkLimit('keys','keys:index');
-  const warn = document.getElementById('keyLimitHit');
-  if(!check.ok){ warn.classList.add('show'); return; }
-  warn.classList.remove('show');
-  const nameInput=document.getElementById('keyNameInput');
-  const name = nameInput.value.trim() || 'unnamed-key';
-  const keys = await sGet('keys:index', []);
-  keys.push({id:uid(), name, key:makeKey(), created:Date.now()});
-  await sSet('keys:index', keys);
-  nameInput.value='';
-  refreshKeys();
-});
-/* ================= PROJECTS / GAME BUILDER ================= */
-const TEMPLATES = ['catcher','breakout','pong','runner'];
-function fallbackSpec(prompt){
-  const p = prompt.toLowerCase();
-  let template='catcher';
-  if(/pong|paddle.*bounce|bounce.*paddle/.test(p)) template='pong';
-  else if(/brick|breakout|block/.test(p)) template='breakout';
-  else if(/jump|run|platform|obstacle|dash|dodge/.test(p)) template='runner';
-  else if(/catch|collect|falling|fruit/.test(p)) template='catcher';
-  const palette = ['#FFADAD','#FF3B3B','#FF6B6B','#D62828','#FFB4B0','#B4141A','#FF7A00','#A855F7','#22C55E','#38BDF8'];
-  let hash = 0;
-  for(let i=0;i<prompt.length;i++) hash = ((hash<<5)-hash)+prompt.charCodeAt(i)|0;
-  const primary = palette[Math.abs(hash)%palette.length];
-  const titleBase = prompt.replace(/[^a-z0-9 ]/gi,' ').replace(/\s+/g,' ').trim();
-  const title = titleBase ? titleBase.slice(0,1).toUpperCase()+titleBase.slice(1,32) : 'Untitled Build';
-  const tags = {
-    catcher:'Catch the targets before they hit the ground.',
-    breakout:'Smash through the blocks and clear the board.',
-    pong:'Outplay the rival paddle and reach seven first.',
-    runner:'Keep moving, jump the obstacles, and beat your score.'
-  };
-  return {
-    template,
-    title,
-    tagline: tags[template]+' Theme: '+prompt.slice(0,55),
-    playerLabel: 'Player',
-    targetLabel: 'Target',
-    primaryColor: primary,
-    secondaryColor: '#F3ECE6'
-  };
-}
-async function buildLog(lines){
-  const box = document.getElementById('buildLog');
-  box.classList.add('show');
-  box.innerHTML='';
-  for(const l of lines){
-    const d=document.createElement('div');
-    d.className='line';
-    d.textContent='> '+l;
-    box.appendChild(d);
-    box.scrollTop = box.scrollHeight;
-    await new Promise(r=>setTimeout(r, 260+Math.random()*220));
-  }
-}
-document.getElementById('buildBtn').addEventListener('click', async ()=>{
-  const check = await checkLimit('projects','projects:index');
-  const warn = document.getElementById('projLimitHit');
-  if(!check.ok){ warn.classList.add('show'); return; }
-  warn.classList.remove('show');
-  const promptEl = document.getElementById('projectPrompt');
-  const prompt = promptEl.value.trim();
-  if(!prompt) return;
-  const btn = document.getElementById('buildBtn');
-  btn.disabled = true;
-  await buildLog(['reading prompt', 'sketching mechanics', 'choosing engine']);
-  const instruction = `Design a tiny 2D browser game concept from this idea: "${prompt}"
-Reply with ONLY raw JSON (no markdown fences, no commentary), matching exactly this shape:
-{"template":"catcher|breakout|pong|runner","title":"short game title","tagline":"one short punchy sentence describing the game","playerLabel":"1-2 word name for the player-controlled piece","targetLabel":"1-2 word name for what the player is catching/hitting/avoiding","primaryColor":"#hexcolor","secondaryColor":"#hexcolor"}
-Pick the template that best matches: catcher = move left/right to catch falling items; breakout = paddle and ball breaking bricks; pong = paddle vs paddle ball volley; runner = jump over obstacles in a side-scroller. Colors should suit the theme and be readable on a dark background.`;
-  const raw = await callYujiAI([{role:'user', content: instruction}]);
-  let spec = null;
-  if(raw){
+(function(){
+  const $ = (s, el=document) => el.querySelector(s);
+  const $$ = (s, el=document) => Array.from(el.querySelectorAll(s));
+
+  // ---------- storage helpers ----------
+  async function loadJSON(key, fallback){
     try{
-      const cleaned = raw.replace(/^```json\s*|```$/g, '').trim();      const parsed = JSON.parse(cleaned);
-      if(TEMPLATES.includes(parsed.template)) spec = parsed;
-    }catch(e){ /* fall through to fallback */ }
+      const r = await window.storage.get(key, false);
+      return r ? JSON.parse(r.value) : fallback;
+    }catch(e){ return fallback; }
   }
-  if(!spec) spec = fallbackSpec(prompt);
-  await buildLog(['compiling world', 'placing objects', 'ready']);
-  document.getElementById('buildLog').classList.remove('show');
-  btn.disabled = false;
-  promptEl.value='';
-  const id = uid();
-  const project = {id, name:spec.title, type:spec.template, created:Date.now(), config:spec};
-  const idx = await sGet('projects:index', []);
-  idx.push({id, name:spec.title, type:spec.template, created:project.created});
-  await sSet('projects:index', idx);
-  await sSet('projects:cfg:'+id, spec);
-  refreshProjectsGrid();
-  openProject(spec);
-});
-async function refreshProjectsGrid(){
-  const idx = await sGet('projects:index', []);
-  const grid = document.getElementById('projectsGrid');
-  const empty = document.getElementById('projectsEmptyNote');
-  grid.innerHTML='';
-  empty.style.display = idx.length? 'none':'block';
-  idx.slice().reverse().forEach(p=>{
-    const card=document.createElement('div');
-    card.className='project-card';
-    card.innerHTML = `<div class="project-swatch" style="background:linear-gradient(135deg, ${swatchColor(p.type)}22, ${swatchColor(p.type)}88);"></div>
-      <h3>${escapeHtml(p.name)}</h3><p>${p.type}</p>`;
-    card.addEventListener('click', async ()=>{
-      const cfg = await sGet('projects:cfg:'+p.id, null);
-      if(cfg) openProject(cfg);
+  async function saveJSON(key, value){
+    try{ await window.storage.set(key, JSON.stringify(value), false); }
+    catch(e){ console.error('storage save failed', key, e); }
+  }
+
+  // ---------- state ----------
+  let chats = [];        // {id,title,messages:[{role,content}]}
+  let activeChatId = null;
+  let projects = [];     // {id,name,desc,code,status,createdAt}
+  let apiKeys = [];       // {id,name,value,createdAt}
+
+  // ---------- init ----------
+  (async function init(){
+    chats = await loadJSON('yuji:chats', []);
+    projects = await loadJSON('yuji:projects', []);
+    apiKeys = await loadJSON('yuji:keys', []);
+    userApiKey = await loadJSON('yuji:userApiKey', null);
+    userModel = await loadJSON('yuji:userModel', 'claude-sonnet-4-5');
+    customize = await loadJSON('yuji:customize', { ...DEFAULT_CUSTOM });
+    renderChatList();
+    renderProjects();
+    renderKeys();
+    updateUserKeyStatus();
+    applyCustomize();
+    if(userApiKey) $('#user-key-input').placeholder = '•••• saved key in use ••••';
+    if(userModel) $('#user-model-input').value = userModel;
+    showUpdateModal();
+  })();
+
+  function updateUserKeyStatus(){
+    const el = $('#user-key-status');
+    if(!el) return;
+    el.textContent = userApiKey ? 'A key is saved and will be used automatically when Claude\'s built-in preview connection isn\'t available.' : 'No key saved yet — chat and project generation won\'t work outside Claude\'s own preview until you add one.';
+  }
+
+  // ---------- tabs ----------
+  const views = { chat: $('#view-chat'), projects: $('#view-projects'), keys: $('#view-keys'), customize: $('#view-customize') };
+  const titles = { chat: 'Yuji AI <span>chat</span>', projects: 'Yuji AI <span>projects</span>', keys: 'Yuji AI <span>api keys</span>', customize: 'Yuji AI <span>customize</span>' };
+  $$('.nav-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      $$('.nav-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      Object.values(views).forEach(v=>v.classList.remove('active'));
+      const tab = btn.dataset.tab;
+      views[tab].classList.add('active');
+      $('#topbar-title').innerHTML = titles[tab];
+      $('#sidebar-list-area').style.display = tab === 'chat' ? 'flex' : 'none';
+      $('#sidebar').classList.remove('open');
     });
-    grid.appendChild(card);
   });
-}
-function swatchColor(type){
-  return {catcher:'#FFADAD',breakout:'#FF3B3B',pong:'#FF6B6B',runner:'#D62828'}[type] || '#FFADAD';
-}
-function openProject(spec){
-  document.getElementById('gameStage').classList.add('show');
-  document.getElementById('projectsGridWrap').style.display='none';
-  document.getElementById('gameTitle').textContent = spec.title;
-  document.getElementById('gameTagline').textContent = spec.tagline;
-  currentSpec = spec;
-  stopActiveGame();
-  resetGameUI();
-}
+  $('#menu-toggle').addEventListener('click', ()=> $('#sidebar').classList.toggle('open'));
 
-function downloadCurrentGame(){
-  if(!currentSpec) return;
-  const cfg = JSON.stringify(currentSpec).replace(/</g,'\\u003c');
-  const gameHtml = `<!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>${escapeHtml(currentSpec.title)}</title>
-<style>
-body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0B0B0D;color:#F3ECE6;font-family:Arial,sans-serif}
-.wrap{width:min(680px,94vw);text-align:center}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-h1{font-size:22px;text-transform:uppercase;margin:0}.tag{color:#9C8F92;font-size:13px;margin:4px 0 12px}
-canvas{width:100%;max-width:640px;background:#0F0C0E;border:2px solid #000;display:block}
-.hint{color:#9C8F92;font:12px monospace;margin-top:9px}
-button{margin-top:12px;background:#FF2D2D;color:#fff;border:2px solid #000;padding:10px 18px;font-weight:800;cursor:pointer}
-</style></head><body><div class="wrap"><div class="top"><h1 id="title"></h1><span id="score">score 0</span></div>
-<div class="tag" id="tag"></div><canvas id="game" width="640" height="360"></canvas><div class="hint" id="hint"></div><button onclick="location.reload()">Restart</button></div>
-<script>
-const cfg=${cfg};
-document.getElementById('title').textContent=cfg.title;
-document.getElementById('tag').textContent=cfg.tagline;
-const canvas=document.getElementById('game'),ctx=canvas.getContext('2d'),scoreEl=document.getElementById('score'),hintEl=document.getElementById('hint');
-const W=canvas.width,H=canvas.height; let score=0, keys={}, running=true;
-function end(msg){running=false;ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(0,0,W,H);ctx.fillStyle='#fff';ctx.font='20px monospace';ctx.textAlign='center';ctx.fillText(msg,W/2,H/2);}
-function setScore(n){score=n;scoreEl.textContent='score '+n;}
-window.onkeydown=e=>{keys[e.key]=true;if((e.key===' '||e.key==='ArrowUp')&&window.player&&player.onGround){player.vy=-12;player.onGround=false;}};
-window.onkeyup=e=>keys[e.key]=false;
-if(cfg.template==='catcher'){
- hintEl.textContent='Arrow keys or mouse · catch the falling items';
- const player={w:80,h:14,x:W/2-40,y:H-26,speed:7}; window.player=player; let items=[],spawn=0,lives=3;
- canvas.onmousemove=e=>{const r=canvas.getBoundingClientRect(),mx=(e.clientX-r.left)*W/r.width;player.x=Math.max(0,Math.min(W-player.w,mx-player.w/2));};
- (function loop(){if(!running)return;if(keys.ArrowLeft)player.x-=7;if(keys.ArrowRight)player.x+=7;player.x=Math.max(0,Math.min(W-player.w,player.x));if(++spawn>45){spawn=0;items.push({x:Math.random()*(W-16),y:-16,r:8,v:2+Math.random()*2.5});}items.forEach(i=>i.y+=i.v);items=items.filter(i=>{if(i.y>H){lives--;return false}if(i.y+i.r>player.y&&i.x>player.x-i.r&&i.x<player.x+player.w+i.r){setScore(score+1);return false}return true});ctx.clearRect(0,0,W,H);ctx.fillStyle=cfg.primaryColor;ctx.fillRect(player.x,player.y,player.w,player.h);ctx.fillStyle=cfg.secondaryColor;items.forEach(i=>{ctx.beginPath();ctx.arc(i.x,i.y,i.r,0,Math.PI*2);ctx.fill()});ctx.fillStyle='#9C8F92';ctx.font='12px monospace';ctx.textAlign='left';ctx.fillText('lives '+lives,10,20);if(lives<=0)return end('Game over — score '+score);requestAnimationFrame(loop)})()
-}else if(cfg.template==='breakout'){
- hintEl.textContent='Arrow keys or mouse · break every brick';
- const paddle={w:90,h:12,x:W/2-45,y:H-24},ball={x:W/2,y:H-40,r:7,vx:3.4,vy:-4};let bricks=[];for(let r=0;r<4;r++)for(let c=0;c<8;c++)bricks.push({x:10+c*((W-20)/8),y:40+r*24,w:(W-20)/8-6,h:18,alive:true});
- canvas.onmousemove=e=>{const r=canvas.getBoundingClientRect(),mx=(e.clientX-r.left)*W/r.width;paddle.x=Math.max(0,Math.min(W-paddle.w,mx-paddle.w/2));};
- (function loop(){if(!running)return;if(keys.ArrowLeft)paddle.x-=8;if(keys.ArrowRight)paddle.x+=8;paddle.x=Math.max(0,Math.min(W-paddle.w,paddle.x));ball.x+=ball.vx;ball.y+=ball.vy;if(ball.x<ball.r||ball.x>W-ball.r)ball.vx*=-1;if(ball.y<ball.r)ball.vy*=-1;if(ball.y+ball.r>paddle.y&&ball.y+ball.r<paddle.y+paddle.h&&ball.x>paddle.x&&ball.x<paddle.x+paddle.w)ball.vy=-Math.abs(ball.vy);bricks.forEach(b=>{if(b.alive&&ball.x>b.x&&ball.x<b.x+b.w&&ball.y-ball.r<b.y+b.h&&ball.y+ball.r>b.y){b.alive=false;ball.vy*=-1;setScore(score+1)}});ctx.clearRect(0,0,W,H);bricks.forEach(b=>{if(b.alive){ctx.fillStyle=cfg.primaryColor;ctx.fillRect(b.x,b.y,b.w,b.h)}});ctx.fillStyle=cfg.primaryColor;ctx.fillRect(paddle.x,paddle.y,paddle.w,paddle.h);ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);ctx.fillStyle=cfg.secondaryColor;ctx.fill();if(ball.y>H)return end('Game over — score '+score);if(bricks.every(b=>!b.alive))return end('Cleared! score '+score);requestAnimationFrame(loop)})()
-}else if(cfg.template==='pong'){
- hintEl.textContent='Arrow Up / Down or mouse · first to 7 wins';
- const p={x:16,y:H/2-30,w:10,h:60},cpu={x:W-26,y:H/2-30,w:10,h:60},ball={x:W/2,y:H/2,r:7,vx:4,vy:3};let cpuScore=0;
- canvas.onmousemove=e=>{const r=canvas.getBoundingClientRect(),my=(e.clientY-r.top)*H/r.height;p.y=Math.max(0,Math.min(H-p.h,my-p.h/2));};
- (function loop(){if(!running)return;if(keys.ArrowUp)p.y-=6;if(keys.ArrowDown)p.y+=6;p.y=Math.max(0,Math.min(H-p.h,p.y));cpu.y+=Math.sign(ball.y-(cpu.y+cpu.h/2))*Math.min(4.4,Math.abs(ball.y-(cpu.y+cpu.h/2)));ball.x+=ball.vx;ball.y+=ball.vy;if(ball.y<ball.r||ball.y>H-ball.r)ball.vy*=-1;if(ball.x-ball.r<p.x+p.w&&ball.y>p.y&&ball.y<p.y+p.h&&ball.vx<0)ball.vx*=-1.05;if(ball.x+ball.r>cpu.x&&ball.y>cpu.y&&ball.y<cpu.y+cpu.h&&ball.vx>0)ball.vx*=-1.05;if(ball.x<0){cpuScore++;ball.x=W/2;ball.y=H/2;ball.vx=4}if(ball.x>W){setScore(score+1);ball.x=W/2;ball.y=H/2;ball.vx=-4}ctx.clearRect(0,0,W,H);ctx.fillStyle=cfg.primaryColor;ctx.fillRect(p.x,p.y,p.w,p.h);ctx.fillStyle=cfg.secondaryColor;ctx.fillRect(cpu.x,cpu.y,cpu.w,cpu.h);ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);ctx.fill();ctx.fillStyle='#9C8F92';ctx.font='16px monospace';ctx.textAlign='center';ctx.fillText(score+' · '+cpuScore,W/2,24);if(score>=7||cpuScore>=7)return end(score>=7?'You win '+score+'–'+cpuScore:'CPU wins '+cpuScore+'–'+score);requestAnimationFrame(loop)})()
-}else{
- hintEl.textContent='Space or Arrow Up · jump over obstacles';
- const player={x:60,y:H-70,w:26,h:30,vy:0,onGround:true};window.player=player;let obs=[],spawn=0,speed=5,t=0;
- (function loop(){if(!running)return;speed+=.002;player.vy+=.7;player.y+=player.vy;if(player.y>H-70){player.y=H-70;player.vy=0;player.onGround=true}if(--spawn<=0){spawn=60+Math.random()*50;obs.push({x:W+10,y:H-64,w:16,h:24})}obs.forEach(o=>o.x-=speed);obs=obs.filter(o=>o.x+o.w>0);if(++t%5===0)setScore(score+1);if(obs.some(o=>player.x<o.x+o.w&&player.x+player.w>o.x&&player.y<o.y+o.h&&player.y+player.h>o.y))return end('Game over — score '+score);ctx.clearRect(0,0,W,H);ctx.fillStyle=cfg.primaryColor;ctx.fillRect(player.x,player.y,player.w,player.h);ctx.fillStyle=cfg.secondaryColor;obs.forEach(o=>ctx.fillRect(o.x,o.y,o.w,o.h));requestAnimationFrame(loop)})()
-}
-<\/script></body></html>`;
-  const blob=new Blob([gameHtml],{type:'text/html'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=(currentSpec.title||'yuji-ai-game').replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').toLowerCase()+'.html';
-  a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-}
-document.getElementById('downloadGameBtn').addEventListener('click', downloadCurrentGame);
+  // ---------- Claude call helper ----------
+  let userApiKey = null;
+  let userModel = 'claude-sonnet-4-5';
 
-document.getElementById('backToGridBtn').addEventListener('click', ()=>{
-  stopActiveGame();
-  document.getElementById('gameStage').classList.remove('show');
-  document.getElementById('projectsGridWrap').style.display='block';
-});
-/* ---------- game engine ---------- */
-let currentSpec=null, activeStop=null;
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const scoreboardEl = document.getElementById('gameScoreboard');
-const hintEl = document.getElementById('gameHint');
-function stopActiveGame(){
-  if(activeStop){ activeStop(); activeStop=null; }
-}
-function resetGameUI(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  scoreboardEl.textContent='score 0';
-  const hints = {
-    catcher:'← → or mouse to move · catch the falling '+((currentSpec&&currentSpec.targetLabel)||'item'),
-    breakout:'← → or mouse to move · break every brick',
-    pong:'← → or mouse to move · first to 7 wins',
-    runner:'space or ↑ to jump · survive as long as you can'
-  };
-  hintEl.textContent = currentSpec? hints[currentSpec.template] : '';
-}
-document.getElementById('resetBtn').addEventListener('click', ()=>{ stopActiveGame(); resetGameUI(); });
-document.getElementById('playBtn').addEventListener('click', ()=>{
-  if(!currentSpec) return;
-  stopActiveGame();
-  activeStop = Games[currentSpec.template](ctx, canvas, currentSpec, (score)=>{ scoreboardEl.textContent='score '+score; });
-});
-const Games = {};
-Games.catcher = function(ctx, canvas, cfg, onScore){
-  let running=true, score=0, lives=3;
-  const W=canvas.width,H=canvas.height;
-  const player={w:80,h:14,x:W/2-40,y:H-26,speed:7};
-  let keys={};
-  let items=[];
-  let spawnTimer=0;
-  function kd(e){keys[e.key]=true;}
-  function ku(e){keys[e.key]=false;}
-  function mm(e){
-    const rect=canvas.getBoundingClientRect();
-    const mx=(e.clientX-rect.left)*(canvas.width/rect.width);
-    player.x = Math.max(0, Math.min(W-player.w, mx-player.w/2));
-  }
-  window.addEventListener('keydown',kd); window.addEventListener('keyup',ku);
-  canvas.addEventListener('mousemove',mm);
-  function loop(){
-    if(!running) return;
-    if(keys['ArrowLeft']) player.x-=player.speed;
-    if(keys['ArrowRight']) player.x+=player.speed;
-    player.x=Math.max(0,Math.min(W-player.w,player.x));
-    spawnTimer++;
-    if(spawnTimer>45){ spawnTimer=0; items.push({x:Math.random()*(W-16),y:-16,r:8,v:2+Math.random()*2.5}); }
-    items.forEach(it=>it.y+=it.v);
-    items = items.filter(it=>{
-      if(it.y>H){ lives--; return false; }
-      if(it.y+it.r>player.y && it.x>player.x-it.r && it.x<player.x+player.w+it.r){ score++; onScore(score); return false; }
-      return true;
+  async function rawCall(headers, body){
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers, body: JSON.stringify(body)
     });
-    if(lives<=0){ running=false; ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(0,0,W,H); ctx.fillStyle='#fff'; ctx.font='20px monospace'; ctx.textAlign='center'; ctx.fillText('Game over — score '+score,W/2,H/2); return; }
-    ctx.clearRect(0,0,W,H);
-    ctx.fillStyle=cfg.primaryColor;
-    ctx.fillRect(player.x,player.y,player.w,player.h);
-    ctx.fillStyle=cfg.secondaryColor;
-    items.forEach(it=>{ ctx.beginPath(); ctx.arc(it.x,it.y,it.r,0,Math.PI*2); ctx.fill(); });
-    ctx.fillStyle='#9C8F92'; ctx.font='12px monospace'; ctx.textAlign='left';
-    ctx.fillText('lives '+lives,10,20);
-    requestAnimationFrame(loop);
+    if(!res.ok){
+      let detail = '';
+      try{ const j = await res.json(); detail = j?.error?.message ? ': ' + j.error.message : ''; }catch(e){}
+      throw new Error('request failed (' + res.status + ')' + detail);
+    }
+    const data = await res.json();
+    const text = (data.content || []).map(b => b.type === 'text' ? b.text : '').join('\n').trim();
+    if(!text) throw new Error('empty response');
+    return text;
   }
-  loop();
-  return ()=>{ running=false; window.removeEventListener('keydown',kd); window.removeEventListener('keyup',ku); canvas.removeEventListener('mousemove',mm); };
-};
-Games.breakout = function(ctx, canvas, cfg, onScore){
-  let running=true, score=0;
-  const W=canvas.width,H=canvas.height;
-  const paddle={w:90,h:12,x:W/2-45,y:H-24,speed:8};
-  const ball={x:W/2,y:H-40,r:7,vx:3.4,vy:-4};
-  let keys={};
-  const cols=8,rows=4,bw=(W-20)/cols,bh=18;
-  let bricks=[];
-  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) bricks.push({x:10+c*bw,y:40+r*(bh+6),w:bw-6,h:bh,alive:true});
-  function kd(e){keys[e.key]=true;} function ku(e){keys[e.key]=false;}
-  function mm(e){
-    const rect=canvas.getBoundingClientRect();
-    const mx=(e.clientX-rect.left)*(canvas.width/rect.width);
-    paddle.x = Math.max(0, Math.min(W-paddle.w, mx-paddle.w/2));
-  }
-  window.addEventListener('keydown',kd); window.addEventListener('keyup',ku);
-  canvas.addEventListener('mousemove',mm);
-  function loop(){
-    if(!running) return;
-    if(keys['ArrowLeft']) paddle.x-=paddle.speed;
-    if(keys['ArrowRight']) paddle.x+=paddle.speed;
-    paddle.x=Math.max(0,Math.min(W-paddle.w,paddle.x));
-    ball.x+=ball.vx; ball.y+=ball.vy;
-    if(ball.x<ball.r||ball.x>W-ball.r) ball.vx*=-1;
-    if(ball.y<ball.r) ball.vy*=-1;
-    if(ball.y+ball.r>paddle.y && ball.y+ball.r<paddle.y+paddle.h && ball.x>paddle.x && ball.x<paddle.x+paddle.w){ ball.vy=-Math.abs(ball.vy); }
-    bricks.forEach(b=>{
-      if(!b.alive) return;
-      if(ball.x>b.x && ball.x<b.x+b.w && ball.y-ball.r<b.y+b.h && ball.y+ball.r>b.y){
-        b.alive=false; ball.vy*=-1; score++; onScore(score);
+
+  async function askYuji(messages, system){
+    const sys = system || 'You are Yuji AI, a friendly, sharp, concise assistant embedded in a chat website called Yuji AI. Keep answers helpful and to the point. Format with markdown where useful.';
+
+    // If the person has saved their own key, use it first — this is what makes the
+    // site work outside Claude's own preview (on a real host, opened as a local file, etc).
+    if(userApiKey){
+      try{
+        return await rawCall(
+          {
+            'Content-Type':'application/json',
+            'x-api-key': userApiKey,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true'
+          },
+          { model: userModel || 'claude-sonnet-4-5', max_tokens:1000, system: sys, messages }
+        );
+      }catch(userErr){
+        throw new Error('Your saved API key didn\'t work (' + userErr.message + '). Check the key and model id in API Keys.');
       }
-    });
-    let gameOver=false, won=bricks.every(b=>!b.alive);
-    if(ball.y>H) gameOver=true;
-    ctx.clearRect(0,0,W,H);
-    bricks.forEach(b=>{ if(b.alive){ ctx.fillStyle=cfg.primaryColor; ctx.fillRect(b.x,b.y,b.w,b.h); } });
-    ctx.fillStyle=cfg.primaryColor; ctx.fillRect(paddle.x,paddle.y,paddle.w,paddle.h);
-    ctx.beginPath(); ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2); ctx.fillStyle=cfg.secondaryColor; ctx.fill();
-    if(gameOver||won){
-      running=false;
-      ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(0,0,W,H);
-      ctx.fillStyle='#fff'; ctx.font='20px monospace'; ctx.textAlign='center';
-      ctx.fillText(won? 'Cleared! score '+score : 'Game over — score '+score, W/2, H/2);
-      return;
     }
-    requestAnimationFrame(loop);
-  }
-  loop();
-  return ()=>{ running=false; window.removeEventListener('keydown',kd); window.removeEventListener('keyup',ku); canvas.removeEventListener('mousemove',mm); };
-};
-Games.pong = function(ctx, canvas, cfg, onScore){
-  let running=true;
-  const W=canvas.width,H=canvas.height;
-  const p1={x:16,y:H/2-30,w:10,h:60,speed:6};
-  const cpu={x:W-26,y:H/2-30,w:10,h:60,speed:4.4};
-  const ball={x:W/2,y:H/2,r:7,vx:4,vy:3};
-  let score=0, cpuScore=0;
-  let keys={};
-  function kd(e){keys[e.key]=true;} function ku(e){keys[e.key]=false;}
-  function mm(e){
-    const rect=canvas.getBoundingClientRect();
-    const my=(e.clientY-rect.top)*(canvas.height/rect.height);
-    p1.y = Math.max(0, Math.min(H-p1.h, my-p1.h/2));
-  }
-  window.addEventListener('keydown',kd); window.addEventListener('keyup',ku);
-  canvas.addEventListener('mousemove',mm);
-  function loop(){
-    if(!running) return;
-    if(keys['ArrowUp']) p1.y-=p1.speed;
-    if(keys['ArrowDown']) p1.y+=p1.speed;
-    p1.y=Math.max(0,Math.min(H-p1.h,p1.y));
-    const target = ball.y - cpu.h/2;
-    cpu.y += Math.sign(target-cpu.y)*Math.min(cpu.speed, Math.abs(target-cpu.y));
-    cpu.y=Math.max(0,Math.min(H-cpu.h,cpu.y));
-    ball.x+=ball.vx; ball.y+=ball.vy;
-    if(ball.y<ball.r||ball.y>H-ball.r) ball.vy*=-1;
-    if(ball.x-ball.r<p1.x+p1.w && ball.y>p1.y && ball.y<p1.y+p1.h && ball.vx<0) ball.vx*=-1.05;
-    if(ball.x+ball.r>cpu.x && ball.y>cpu.y && ball.y<cpu.y+cpu.h && ball.vx>0) ball.vx*=-1.05;
-    if(ball.x<0){ cpuScore++; ball.x=W/2; ball.y=H/2; ball.vx=4; }
-    if(ball.x>W){ score++; onScore(score); ball.x=W/2; ball.y=H/2; ball.vx=-4; }
-    ctx.clearRect(0,0,W,H);
-    ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.setLineDash([6,8]);
-    ctx.beginPath(); ctx.moveTo(W/2,0); ctx.lineTo(W/2,H); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle=cfg.primaryColor; ctx.fillRect(p1.x,p1.y,p1.w,p1.h);
-    ctx.fillStyle=cfg.secondaryColor; ctx.fillRect(cpu.x,cpu.y,cpu.w,cpu.h);
-    ctx.beginPath(); ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2); ctx.fill();
-    ctx.font='16px monospace'; ctx.textAlign='center'; ctx.fillStyle='#9C8F92';
-    ctx.fillText(score+' · '+cpuScore, W/2, 24);
-    if(score>=7||cpuScore>=7){
-      running=false;
-      ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(0,0,W,H);
-      ctx.fillStyle='#fff'; ctx.font='20px monospace';
-      ctx.fillText(score>=7? 'You win '+score+'–'+cpuScore : 'CPU wins '+cpuScore+'–'+score, W/2, H/2);
-      return;
+
+    // Otherwise, try Claude's built-in no-key connection (only works when this file
+    // is opened inside Claude's own in-chat preview).
+    try{
+      return await rawCall(
+        {'Content-Type':'application/json'},
+        { model:'claude-sonnet-4-6', max_tokens:1000, system: sys, messages }
+      );
+    }catch(builtinErr){
+      throw new Error('No AI connection available. Add your own Anthropic API key under the API Keys tab to use this site outside Claude\'s preview.');
     }
-    requestAnimationFrame(loop);
   }
-  loop();
-  return ()=>{ running=false; window.removeEventListener('keydown',kd); window.removeEventListener('keyup',ku); canvas.removeEventListener('mousemove',mm); };
-};
-Games.runner = function(ctx, canvas, cfg, onScore){
-  let running=true, score=0, dead=false;
-  const W=canvas.width,H=canvas.height;
-  const groundY=H-40;
-  const player={x:60,y:groundY-30,w:26,h:30,vy:0,onGround:true};
-  const gravity=0.7, jumpV=-12;
-  let obstacles=[]; let spawnTimer=0; let speed=5;
-  let keys={};
-  function kd(e){
-    keys[e.key]=true;
-    if((e.key===' '||e.key==='ArrowUp') && player.onGround){ player.vy=jumpV; player.onGround=false; }
-  }
-  function ku(e){keys[e.key]=false;}
-  window.addEventListener('keydown',kd); window.addEventListener('keyup',ku);
-  function loop(){
-    if(!running) return;
-    if(!dead){
-      speed += 0.002;
-      player.vy+=gravity; player.y+=player.vy;
-      if(player.y>groundY-player.h){ player.y=groundY-player.h; player.vy=0; player.onGround=true; }
-      spawnTimer--;
-      if(spawnTimer<=0){ spawnTimer=60+Math.random()*50; obstacles.push({x:W+10,y:groundY-24,w:16,h:24}); }
-      obstacles.forEach(o=>o.x-=speed);
-      obstacles=obstacles.filter(o=>o.x+o.w>0);
-      obstacles.forEach(o=>{
-        if(player.x<o.x+o.w && player.x+player.w>o.x && player.y<o.y+o.h && player.y+player.h>o.y){ dead=true; }
+
+  // ================= CHAT =================
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+
+  function renderChatList(){
+    const list = $('#chat-list');
+    list.innerHTML = '';
+    if(chats.length === 0){
+      const e = document.createElement('div');
+      e.className = 'empty-mini'; e.style.padding = '10px 4px'; e.textContent = 'No chats yet';
+      list.appendChild(e);
+    }
+    chats.slice().sort((a,b)=>b.updatedAt-a.updatedAt).forEach(c=>{
+      const item = document.createElement('div');
+      item.className = 'side-item' + (c.id === activeChatId ? ' active' : '');
+      item.innerHTML = '<span class="side-item-title"></span><span class="del">✕</span>';
+      item.querySelector('.side-item-title').textContent = c.title || 'New chat';
+      item.addEventListener('click', (e)=>{
+        if(e.target.classList.contains('del')) return;
+        activeChatId = c.id;
+        renderChatList();
+        renderActiveChat();
       });
-      score++; if(score%5===0) onScore(Math.floor(score/5));
-    }
-    ctx.clearRect(0,0,W,H);
-    ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.beginPath(); ctx.moveTo(0,groundY); ctx.lineTo(W,groundY); ctx.stroke();
-    ctx.fillStyle=cfg.primaryColor; ctx.fillRect(player.x,player.y,player.w,player.h);
-    ctx.fillStyle=cfg.secondaryColor;
-    obstacles.forEach(o=>ctx.fillRect(o.x,o.y,o.w,o.h));
-    ctx.fillStyle='#9C8F92'; ctx.font='12px monospace'; ctx.textAlign='left';
-    ctx.fillText('score '+Math.floor(score/5),10,20);
-    if(dead){
-      running=false;
-      ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(0,0,W,H);
-      ctx.fillStyle='#fff'; ctx.font='20px monospace'; ctx.textAlign='center';
-      ctx.fillText('Game over — score '+Math.floor(score/5), W/2, H/2);
+      item.querySelector('.del').addEventListener('click', async (e)=>{
+        e.stopPropagation();
+        chats = chats.filter(x=>x.id !== c.id);
+        if(activeChatId === c.id) activeChatId = null;
+        await saveJSON('yuji:chats', chats);
+        renderChatList(); renderActiveChat();
+      });
+      list.appendChild(item);
+    });
+  }
+
+  function renderActiveChat(){
+    const inner = $('#chat-inner');
+    const chat = chats.find(c=>c.id === activeChatId);
+    if(!chat){
+      inner.innerHTML = `<div class="empty-state" id="chat-empty">
+        <div class="ring"></div>
+        <h2>Talk to Yuji AI</h2>
+        <p>Ask anything, brainstorm, get help writing or coding. Your chats save automatically.</p>
+        <div class="suggestions">
+          <div class="chip" data-fill="Give me 5 ideas for a 2D platformer game">Game ideas</div>
+          <div class="chip" data-fill="Explain how neural networks learn, simply">Explain something</div>
+          <div class="chip" data-fill="Help me write a short bio for my profile">Write for me</div>
+        </div>
+      </div>`;
+      bindChips();
       return;
     }
-    requestAnimationFrame(loop);
+    inner.innerHTML = '';
+    chat.messages.forEach(m=> inner.appendChild(renderMsgEl(m.role, m.content)));
+    $('#chat-scroll').scrollTop = $('#chat-scroll').scrollHeight;
   }
-  loop();
-  return ()=>{ running=false; window.removeEventListener('keydown',kd); window.removeEventListener('keyup',ku); };
-};
-/* ================= init ================= */
-(async function init(){
-  await refreshChatList();
-  await refreshKeys();
-  await refreshProjectsGrid();
-  await refreshPlanChip();
-  await refreshPlanView();
+
+  function bindChips(){
+    $$('.chip').forEach(c=> c.addEventListener('click', ()=>{
+      $('#chat-input').value = c.dataset.fill;
+      sendMessage();
+    }));
+  }
+  bindChips();
+
+  function renderMsgEl(role, content){
+    const wrap = document.createElement('div');
+    wrap.className = 'msg ' + (role === 'user' ? 'user' : 'ai');
+    wrap.innerHTML = `
+      <div class="avatar">${role === 'user' ? 'You' : 'Y'}</div>
+      <div class="bubble-wrap">
+        <div class="name">${role === 'user' ? 'You' : 'Yuji AI'}</div>
+        <div class="bubble"></div>
+      </div>`;
+    wrap.querySelector('.bubble').textContent = content;
+    return wrap;
+  }
+
+  async function ensureChat(){
+    if(activeChatId && chats.find(c=>c.id===activeChatId)) return;
+    const c = { id: uid(), title: 'New chat', messages: [], updatedAt: Date.now() };
+    chats.push(c);
+    activeChatId = c.id;
+    await saveJSON('yuji:chats', chats);
+    renderChatList();
+  }
+
+  $('#new-chat-btn').addEventListener('click', async ()=>{
+    activeChatId = null;
+    renderChatList();
+    renderActiveChat();
+  });
+
+  const input = $('#chat-input');
+  input.addEventListener('input', ()=>{ input.style.height='auto'; input.style.height = Math.min(input.scrollHeight,160)+'px'; });
+  input.addEventListener('keydown', (e)=>{
+    if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }
+  });
+  $('#send-btn').addEventListener('click', sendMessage);
+
+  async function sendMessage(){
+    const text = input.value.trim();
+    if(!text) return;
+    await ensureChat();
+    const chat = chats.find(c=>c.id===activeChatId);
+    if(chat.messages.length === 0){
+      chat.title = text.slice(0,40) + (text.length>40?'…':'');
+    }
+    chat.messages.push({role:'user', content:text});
+    chat.updatedAt = Date.now();
+    input.value=''; input.style.height='auto';
+    renderChatList();
+    renderActiveChat();
+
+    const inner = $('#chat-inner');
+    const typingEl = document.createElement('div');
+    typingEl.className = 'msg ai';
+    typingEl.innerHTML = `<div class="avatar">Y</div><div class="bubble-wrap"><div class="name">Yuji AI</div><div class="typing"><span></span><span></span><span></span></div></div>`;
+    inner.appendChild(typingEl);
+    $('#chat-scroll').scrollTop = $('#chat-scroll').scrollHeight;
+    $('#send-btn').disabled = true;
+
+    try{
+      const apiMsgs = chat.messages.slice(-14).map(m=>({role:m.role, content:m.content}));
+      const reply = await askYuji(apiMsgs);
+      chat.messages.push({role:'assistant', content:reply});
+      chat.updatedAt = Date.now();
+      await saveJSON('yuji:chats', chats);
+      renderChatList();
+      renderActiveChat();
+    }catch(err){
+      typingEl.remove();
+      const errEl = renderMsgEl('assistant', "I couldn't get a response (" + err.message + "). If you're using this outside Claude's own preview, add your Anthropic API key under the API Keys tab, then try again.");
+      inner.appendChild(errEl);
+    }finally{
+      $('#send-btn').disabled = false;
+    }
+  }
+
+  // ================= PROJECTS =================
+  function renderProjects(){
+    const grid = $('#projects-grid');
+    grid.innerHTML = '';
+    if(projects.length===0){
+      grid.innerHTML = '<div class="empty-mini">No projects yet — describe a game above to generate your first one.</div>';
+      return;
+    }
+    projects.slice().sort((a,b)=>b.createdAt-a.createdAt).forEach(p=>{
+      const card = document.createElement('div');
+      card.className = 'project-card';
+      card.innerHTML = `<div class="tag">${p.status === 'ready' ? 'Playable' : p.status === 'error' ? 'Failed' : 'Generating'}</div>
+        <h3></h3><p></p>`;
+      card.querySelector('h3').textContent = p.name;
+      card.querySelector('p').textContent = p.desc;
+      card.addEventListener('click', ()=> openGame(p));
+      grid.appendChild(card);
+    });
+  }
+
+  $('#gen-btn').addEventListener('click', async ()=>{
+    const name = $('#proj-name').value.trim() || 'Untitled game';
+    const desc = $('#proj-desc').value.trim();
+    if(!desc){ $('#proj-desc').focus(); return; }
+    const btn = $('#gen-btn');
+    btn.disabled = true; btn.textContent = 'Generating…';
+
+    const proj = { id: uid(), name, desc, code:'', status:'generating', createdAt: Date.now() };
+    projects.push(proj);
+    await saveJSON('yuji:projects', projects);
+    renderProjects();
+    openGame(proj);
+
+    try{
+      const code = await generateGameCode(name, desc);
+      proj.code = code;
+      proj.status = 'ready';
+      await saveJSON('yuji:projects', projects);
+      renderProjects();
+      if($('#game-modal').classList.contains('active') && $('#game-modal-title').dataset.projId === proj.id){
+        showGameFrame(proj);
+      }
+    }catch(err){
+      proj.status = 'error';
+      proj.error = err.message;
+      await saveJSON('yuji:projects', projects);
+      renderProjects();
+      if($('#game-modal').classList.contains('active') && $('#game-modal-title').dataset.projId === proj.id){
+        $('#game-status').textContent = 'Generation failed: ' + err.message;
+      }
+    }finally{
+      btn.disabled = false; btn.textContent = '✦ Generate game';
+      $('#proj-name').value=''; $('#proj-desc').value='';
+    }
+  });
+
+  async function generateGameCode(name, desc){
+    const sys = `You are a game-generation engine inside Yuji AI. Output ONLY a single complete, self-contained HTML document that implements a playable browser game — no explanation, no markdown code fences, no external links or resources (no external images/fonts/CDNs). Use inline <style> and <script> only, with <canvas> for rendering when appropriate. The game must work with keyboard and/or mouse/touch, show a title and brief on-screen instructions, track score if relevant, and have a clear restart/game-over flow if relevant. Keep it visually clean with a dark background and red accent color (#ff3b3b) to match the Yuji AI brand. Respond with nothing but the raw HTML document, starting with <!DOCTYPE html>.`;
+    const userMsg = `Game name: ${name}\nDescription: ${desc}`;
+    let text = await askYuji([{role:'user', content:userMsg}], sys);
+    text = text.trim();
+    text = text.replace(/^```html\s*/i,'').replace(/^```\s*/,'').replace(/```\s*$/,'');
+    if(!/<!DOCTYPE html>|<html/i.test(text)){
+      throw new Error('Yuji AI did not return valid game code');
+    }
+    return text;
+  }
+
+  function openGame(proj){
+    $('#game-modal').classList.add('active');
+    $('#game-modal-title').textContent = proj.name;
+    $('#game-modal-title').dataset.projId = proj.id;
+    if(proj.status === 'ready'){ showGameFrame(proj); }
+    else if(proj.status === 'error'){ $('#game-frame-wrap').innerHTML = `<div class="game-status">Generation failed: ${proj.error||'unknown error'}</div>`; }
+    else { $('#game-frame-wrap').innerHTML = `<div class="game-status" id="game-status">Generating your game…</div>`; }
+  }
+  function showGameFrame(proj){
+    $('#game-frame-wrap').innerHTML = '';
+    const iframe = document.createElement('iframe');
+    iframe.sandbox = 'allow-scripts allow-pointer-lock';
+    iframe.srcdoc = proj.code;
+    $('#game-frame-wrap').appendChild(iframe);
+  }
+  $('#game-modal-close').addEventListener('click', ()=> $('#game-modal').classList.remove('active'));
+  $('#game-modal').addEventListener('click', (e)=>{ if(e.target.id==='game-modal') $('#game-modal').classList.remove('active'); });
+
+  // ================= API KEYS =================
+  function renderKeys(){
+    const list = $('#keys-list');
+    list.innerHTML = '';
+    if(apiKeys.length===0){
+      list.innerHTML = '<div class="empty-mini">No keys yet. Generate one above.</div>';
+      return;
+    }
+    apiKeys.slice().sort((a,b)=>b.createdAt-a.createdAt).forEach(k=>{
+      const row = document.createElement('div');
+      row.className = 'key-row';
+      row.innerHTML = `<div class="k-name"></div><div class="k-val"></div><div class="k-date"></div>
+        <button class="copy-btn">Copy</button><button class="rev-btn">Revoke</button>`;
+      row.querySelector('.k-name').textContent = k.name;
+      row.querySelector('.k-val').textContent = k.value;
+      row.querySelector('.k-date').textContent = new Date(k.createdAt).toLocaleDateString();
+      row.querySelector('.copy-btn').addEventListener('click', ()=>{
+        navigator.clipboard.writeText(k.value).catch(()=>{});
+        const b = row.querySelector('.copy-btn'); b.textContent='Copied'; setTimeout(()=>b.textContent='Copy',1200);
+      });
+      row.querySelector('.rev-btn').addEventListener('click', async ()=>{
+        apiKeys = apiKeys.filter(x=>x.id!==k.id);
+        await saveJSON('yuji:keys', apiKeys);
+        renderKeys();
+      });
+      list.appendChild(row);
+    });
+  }
+
+  function genKeyValue(){
+    const chars = 'abcdef0123456789';
+    let s = 'yuji-';
+    for(let i=0;i<32;i++) s += chars[Math.floor(Math.random()*chars.length)];
+    return s;
+  }
+
+  $('#save-user-key-btn').addEventListener('click', async ()=>{
+    const keyVal = $('#user-key-input').value.trim();
+    const modelVal = $('#user-model-input').value.trim() || 'claude-sonnet-4-5';
+    if(keyVal){
+      userApiKey = keyVal;
+      await saveJSON('yuji:userApiKey', userApiKey);
+      $('#user-key-input').value = '';
+      $('#user-key-input').placeholder = '•••• saved key in use ••••';
+    }
+    userModel = modelVal;
+    await saveJSON('yuji:userModel', userModel);
+    updateUserKeyStatus();
+  });
+
+  $('#gen-key-btn').addEventListener('click', async ()=>{
+    const nameInput = $('#key-name-input');
+    const name = nameInput.value.trim() || 'Unnamed key';
+    apiKeys.push({ id: uid(), name, value: genKeyValue(), createdAt: Date.now() });
+    await saveJSON('yuji:keys', apiKeys);
+    nameInput.value = '';
+    renderKeys();
+  });
+
+  // ================= CUSTOMIZE =================
+  const DEFAULT_CUSTOM = { red:'#ff3b3b', light:'#ffb3ab', shape:'soft', glow:35 };
+  let customize = { ...DEFAULT_CUSTOM };
+
+  function hexToRgb(hex){
+    const h = hex.replace('#','');
+    const n = parseInt(h.length===3 ? h.split('').map(c=>c+c).join('') : h, 16);
+    return { r:(n>>16)&255, g:(n>>8)&255, b:n&255 };
+  }
+  function darken(hex, amt){
+    const {r,g,b} = hexToRgb(hex);
+    const d = (v)=> Math.max(0, Math.round(v*(1-amt)));
+    return '#' + [d(r),d(g),d(b)].map(v=>v.toString(16).padStart(2,'0')).join('');
+  }
+
+  function applyCustomize(){
+    const root = document.documentElement.style;
+    root.setProperty('--red', customize.red);
+    root.setProperty('--red-light', customize.light);
+    root.setProperty('--red-dim', darken(customize.red, 0.24));
+    const {r,g,b} = hexToRgb(customize.red);
+    root.setProperty('--red-glow', `rgba(${r},${g},${b},0.35)`);
+    document.body.style.setProperty('--glow-o1', (customize.glow/100*0.22).toFixed(3));
+    document.body.style.setProperty('--glow-o2', (customize.glow/100*0.13).toFixed(3));
+    document.body.style.background =
+      `radial-gradient(ellipse 900px 500px at 15% -10%, rgba(${r},${g},${b},${(customize.glow/100*0.28).toFixed(3)}), transparent 60%),` +
+      `radial-gradient(ellipse 700px 500px at 100% 100%, rgba(${r},${g},${b},${(customize.glow/100*0.16).toFixed(3)}), transparent 60%),` +
+      `var(--bg)`;
+
+    const sharp = customize.shape === 'sharp';
+    document.body.style.setProperty('--radius-mult', sharp ? '0' : '1');
+    $$('.new-btn,.gen-btn,.chip,.side-item,.key-card,.new-project-card,.project-card,.key-row,.customize-card,.composer-inner,.game-modal,.new-key-form input,.msg .avatar,.brand-mark,.swatch,.toggle-opt').forEach(el=>{
+      el.style.borderRadius = sharp ? '3px' : '';
+    });
+
+    // reflect selection UI
+    $$('.swatch').forEach(s=> s.classList.toggle('selected', s.dataset.red && s.dataset.red.toLowerCase()===customize.red.toLowerCase()));
+    $$('.toggle-opt').forEach(o=> o.classList.toggle('selected', o.dataset.shape === customize.shape));
+    const gs = $('#glow-slider'); if(gs) gs.value = customize.glow;
+    const cc = $('#custom-color-input'); if(cc) cc.value = customize.red;
+  }
+
+  async function saveCustomize(){ await saveJSON('yuji:customize', customize); applyCustomize(); }
+
+  $('#swatch-row').addEventListener('click', (e)=>{
+    const sw = e.target.closest('.swatch');
+    if(!sw || !sw.dataset.red) return;
+    customize.red = sw.dataset.red; customize.light = sw.dataset.light;
+    saveCustomize();
+  });
+  $('#custom-color-input').addEventListener('input', (e)=>{
+    customize.red = e.target.value;
+    customize.light = lighten(customize.red);
+    saveCustomize();
+  });
+  function lighten(hex){
+    const {r,g,b} = hexToRgb(hex);
+    const l = (v)=> Math.min(255, Math.round(v + (255-v)*0.55));
+    return '#' + [l(r),l(g),l(b)].map(v=>v.toString(16).padStart(2,'0')).join('');
+  }
+  $('#shape-toggle').addEventListener('click', (e)=>{
+    const opt = e.target.closest('.toggle-opt');
+    if(!opt) return;
+    customize.shape = opt.dataset.shape;
+    saveCustomize();
+  });
+  $('#glow-slider').addEventListener('input', (e)=>{
+    customize.glow = parseInt(e.target.value,10);
+    saveCustomize();
+  });
+  $('#reset-customize').addEventListener('click', ()=>{
+    customize = { ...DEFAULT_CUSTOM };
+    saveCustomize();
+  });
+
+  // ================= UPDATE LOG =================
+  const CHANGELOG = [
+    { version:'1.2', date:'Aug 2026', items:[
+      'Added Customize — pick an accent color, bubble shape, and glow intensity, all applied live.',
+      'Added an update log that greets you with what changed each time you open Yuji AI.',
+      'Chat and game generation now work outside Claude too — save your own Anthropic API key under API Keys.'
+    ]},
+    { version:'1.1', date:'Aug 2026', items:[
+      'Added Projects — describe a game and Yuji AI generates a playable browser game.',
+      'Added a demo API key manager.'
+    ]},
+    { version:'1.0', date:'Aug 2026', items:[
+      'Initial release: chat with Yuji AI, with chats saved automatically to your browser.'
+    ]}
+  ];
+
+  function renderChangelog(){
+    const body = $('#update-log-body');
+    body.innerHTML = CHANGELOG.map(entry => `
+      <div class="update-log-entry">
+        <div class="v">v${entry.version}<span class="date">${entry.date}</span></div>
+        <ul>${entry.items.map(i=>`<li>${i}</li>`).join('')}</ul>
+      </div>
+    `).join('');
+  }
+  function showUpdateModal(){
+    renderChangelog();
+    $('#update-modal').classList.add('active');
+  }
+  function hideUpdateModal(){ $('#update-modal').classList.remove('active'); }
+  $('#update-modal-close').addEventListener('click', hideUpdateModal);
+  $('#update-modal-ok').addEventListener('click', hideUpdateModal);
+  $('#update-modal').addEventListener('click', (e)=>{ if(e.target.id==='update-modal') hideUpdateModal(); });
+
 })();
 </script>
 </body>
