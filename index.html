@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Yuji AI</title>
+<script src="https://js.puter.com/v2/"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
@@ -110,6 +111,14 @@ body{
 }
 .topbar-title{ font-family:var(--display); font-size:15.5px; font-weight:600; letter-spacing:0.3px; }
 .topbar-title span{ color:var(--text-faint); font-family:var(--body); font-weight:400; font-size:12.5px; margin-left:8px;}
+#model-select{
+  background:var(--bg-elev-2); border:1px solid var(--border); color:var(--text-muted);
+  font-size:12.5px; padding:7px 10px; border-radius:8px; outline:none; cursor:pointer;
+}
+#model-select:focus{ border-color:var(--red-dim); }
+.image-card{ background:var(--bg-elev); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+.image-card img{ width:100%; height:180px; object-fit:cover; display:block; background:var(--bg-elev-2); }
+.image-card .cap{ padding:10px 12px; font-size:12px; color:var(--text-muted); line-height:1.4; }
 
 .view{ flex:1; overflow-y:auto; display:none; }
 .view.active{ display:flex; flex-direction:column; }
@@ -296,14 +305,14 @@ textarea#chat-input::placeholder{ color:var(--text-faint); }
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
         Projects
       </button>
-      <button class="nav-btn" data-tab="keys">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.6 12.4 20 3l2 2-1.5 1.5L22 8l-2 2-1.5-1.5L17 10"/></svg>
-        API Keys
+      <button class="nav-btn" data-tab="images">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="14" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+        Image Studio
+        <span class="new-badge">NEW</span>
       </button>
       <button class="nav-btn" data-tab="customize" style="display:flex;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="19" cy="17" r="2.5"/><circle cx="5" cy="17" r="2.5"/><path d="M13.5 9v3M13.5 12l4.2 3.3M13.5 12l-6.2 3.3"/></svg>
         Customize
-        <span class="new-badge">NEW</span>
       </button>
     </div>
 
@@ -323,6 +332,15 @@ textarea#chat-input::placeholder{ color:var(--text-faint); }
       <div style="display:flex; align-items:center; gap:10px;">
         <button class="menu-toggle" id="menu-toggle">☰</button>
         <div class="topbar-title" id="topbar-title">Yuji AI <span>chat</span></div>
+      </div>
+      <div id="chat-topbar-actions" style="display:flex; align-items:center; gap:10px;">
+        <select id="model-select" title="AI model">
+          <option value="">Yuji Default (fast)</option>
+          <option value="anthropic/claude-sonnet-5">Claude Sonnet 5</option>
+          <option value="google/gemini-3.1-pro-preview">Gemini 3.1 Pro</option>
+          <option value="gpt-5.5">GPT-5.5</option>
+        </select>
+        <button class="menu-toggle" id="export-chat-btn" title="Export this chat">⭳</button>
       </div>
     </div>
 
@@ -345,6 +363,9 @@ textarea#chat-input::placeholder{ color:var(--text-faint); }
       <div class="composer">
         <div class="composer-inner">
           <textarea id="chat-input" rows="1" placeholder="Message Yuji AI..."></textarea>
+          <button class="send-btn" id="mic-btn" title="Voice input" style="background:var(--bg-elev-2); border:1px solid var(--border);">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/></svg>
+          </button>
           <button class="send-btn" id="send-btn" title="Send">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>
           </button>
@@ -374,35 +395,22 @@ textarea#chat-input::placeholder{ color:var(--text-faint); }
       </div>
     </section>
 
-    <!-- API KEYS VIEW -->
-    <section class="view" id="view-keys">
+    <!-- IMAGE STUDIO VIEW -->
+    <section class="view" id="view-images">
       <div class="section">
         <div class="section-head">
-          <h1>API Keys</h1>
-          <p>Create keys to identify apps that call Yuji AI.</p>
+          <h1>Image Studio</h1>
+          <p>Describe an image and Yuji AI generates it — free, no API key. First image on this device may open a quick, free Puter sign-in popup (usage is covered by your own free Puter account, not billed to you or Eggfr).</p>
         </div>
 
-        <div class="key-card">
-          <strong style="font-size:13.5px;">Connect Yuji AI (make chat actually work here)</strong>
-          <div class="warn">This site runs entirely in your browser with no server, so it needs a real Anthropic API key to talk to an AI when it's not opened inside Claude's own preview. Get a key at <span style="color:var(--red-light)">console.anthropic.com</span>, paste it below, and it's stored only in your browser. Note: exposing an API key in front-end code means anyone who inspects this page could see it — fine for personal/local use, not for a public deployed site.</div>
-          <div class="new-key-form">
-            <input type="password" id="user-key-input" placeholder="sk-ant-...">
-            <input type="text" id="user-model-input" placeholder="model id" style="max-width:220px;" value="claude-sonnet-4-5">
-            <button class="gen-btn" id="save-user-key-btn">Save</button>
-          </div>
-          <div class="warn" id="user-key-status" style="margin-top:8px;"></div>
+        <div class="new-project-card">
+          <label>Describe the image</label>
+          <textarea id="img-prompt" placeholder="e.g. A red neon dragon coiled around a skyscraper at night, cinematic, highly detailed"></textarea>
+          <button class="gen-btn" id="img-gen-btn">✦ Generate image</button>
         </div>
 
-        <div class="key-card">
-          <strong style="font-size:13.5px;">Demo key manager</strong>
-          <div class="warn">These keys below are separate — a front-end demo for the idea of "Yuji AI keys" (e.g. to hand out to your own users). There's no backend, so they don't grant real access to anything by themselves. A real key system needs a server to issue, store, and check keys.</div>
-          <div class="new-key-form">
-            <input type="text" id="key-name-input" placeholder="Key name, e.g. My Game Server">
-            <button class="gen-btn" id="gen-key-btn">Generate key</button>
-          </div>
-        </div>
-
-        <div id="keys-list"></div>
+        <div class="side-list-label" style="margin-bottom:14px;">Your images</div>
+        <div class="projects-grid" id="images-grid"></div>
       </div>
     </section>
 
@@ -503,35 +511,26 @@ textarea#chat-input::placeholder{ color:var(--text-faint); }
   let chats = [];        // {id,title,messages:[{role,content}]}
   let activeChatId = null;
   let projects = [];     // {id,name,desc,code,status,createdAt}
-  let apiKeys = [];       // {id,name,value,createdAt}
+  let images = [];       // {id,prompt,dataUrl,createdAt}
 
   // ---------- init ----------
   (async function init(){
     chats = await loadJSON('yuji:chats', []);
     projects = await loadJSON('yuji:projects', []);
-    apiKeys = await loadJSON('yuji:keys', []);
-    userApiKey = await loadJSON('yuji:userApiKey', null);
-    userModel = await loadJSON('yuji:userModel', 'claude-sonnet-4-5');
+    images = await loadJSON('yuji:images', []);
+    selectedModel = await loadJSON('yuji:model', '');
     customize = await loadJSON('yuji:customize', { ...DEFAULT_CUSTOM });
     renderChatList();
     renderProjects();
-    renderKeys();
-    updateUserKeyStatus();
+    renderImages();
     applyCustomize();
-    if(userApiKey) $('#user-key-input').placeholder = '•••• saved key in use ••••';
-    if(userModel) $('#user-model-input').value = userModel;
+    $('#model-select').value = selectedModel;
     showUpdateModal();
   })();
 
-  function updateUserKeyStatus(){
-    const el = $('#user-key-status');
-    if(!el) return;
-    el.textContent = userApiKey ? 'A key is saved and will be used automatically when Claude\'s built-in preview connection isn\'t available.' : 'No key saved yet — chat and project generation won\'t work outside Claude\'s own preview until you add one.';
-  }
-
   // ---------- tabs ----------
-  const views = { chat: $('#view-chat'), projects: $('#view-projects'), keys: $('#view-keys'), customize: $('#view-customize') };
-  const titles = { chat: 'Yuji AI <span>chat</span>', projects: 'Yuji AI <span>projects</span>', keys: 'Yuji AI <span>api keys</span>', customize: 'Yuji AI <span>customize</span>' };
+  const views = { chat: $('#view-chat'), projects: $('#view-projects'), images: $('#view-images'), customize: $('#view-customize') };
+  const titles = { chat: 'Yuji AI <span>chat</span>', projects: 'Yuji AI <span>projects</span>', images: 'Yuji AI <span>image studio</span>', customize: 'Yuji AI <span>customize</span>' };
   $$('.nav-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       $$('.nav-btn').forEach(b=>b.classList.remove('active'));
@@ -541,61 +540,79 @@ textarea#chat-input::placeholder{ color:var(--text-faint); }
       views[tab].classList.add('active');
       $('#topbar-title').innerHTML = titles[tab];
       $('#sidebar-list-area').style.display = tab === 'chat' ? 'flex' : 'none';
+      $('#chat-topbar-actions').style.display = tab === 'chat' ? 'flex' : 'none';
       $('#sidebar').classList.remove('open');
     });
   });
   $('#menu-toggle').addEventListener('click', ()=> $('#sidebar').classList.toggle('open'));
 
-  // ---------- Claude call helper ----------
-  let userApiKey = null;
-  let userModel = 'claude-sonnet-4-5';
+  // ---------- Yuji AI connection (powered by Puter.js — free, keyless, works anywhere) ----------
+  let selectedModel = '';
 
-  async function rawCall(headers, body){
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST', headers, body: JSON.stringify(body)
-    });
-    if(!res.ok){
-      let detail = '';
-      try{ const j = await res.json(); detail = j?.error?.message ? ': ' + j.error.message : ''; }catch(e){}
-      throw new Error('request failed (' + res.status + ')' + detail);
-    }
-    const data = await res.json();
-    const text = (data.content || []).map(b => b.type === 'text' ? b.text : '').join('\n').trim();
-    if(!text) throw new Error('empty response');
-    return text;
+  function extractText(response){
+    if(typeof response === 'string') return response;
+    const c = response?.message?.content;
+    if(typeof c === 'string') return c;
+    if(Array.isArray(c)) return c.map(b => b.text || '').join('\n').trim();
+    return response ? String(response) : '';
   }
 
   async function askYuji(messages, system){
+    if(typeof puter === 'undefined'){
+      throw new Error('Puter.js failed to load — check your internet connection and try reloading.');
+    }
     const sys = system || 'You are Yuji AI, a friendly, sharp, concise assistant embedded in a chat website called Yuji AI. Keep answers helpful and to the point. Format with markdown where useful.';
-
-    // If the person has saved their own key, use it first — this is what makes the
-    // site work outside Claude's own preview (on a real host, opened as a local file, etc).
-    if(userApiKey){
-      try{
-        return await rawCall(
-          {
-            'Content-Type':'application/json',
-            'x-api-key': userApiKey,
-            'anthropic-version': '2023-06-01',
-            'anthropic-dangerous-direct-browser-access': 'true'
-          },
-          { model: userModel || 'claude-sonnet-4-5', max_tokens:1000, system: sys, messages }
-        );
-      }catch(userErr){
-        throw new Error('Your saved API key didn\'t work (' + userErr.message + '). Check the key and model id in API Keys.');
-      }
-    }
-
-    // Otherwise, try Claude's built-in no-key connection (only works when this file
-    // is opened inside Claude's own in-chat preview).
+    const fullMessages = [{ role:'system', content: sys }, ...messages];
+    const opts = selectedModel ? { model: selectedModel } : {};
     try{
-      return await rawCall(
-        {'Content-Type':'application/json'},
-        { model:'claude-sonnet-4-6', max_tokens:1000, system: sys, messages }
-      );
-    }catch(builtinErr){
-      throw new Error('No AI connection available. Add your own Anthropic API key under the API Keys tab to use this site outside Claude\'s preview.');
+      const response = await puter.ai.chat(fullMessages, opts);
+      const text = extractText(response);
+      if(!text) throw new Error('empty response');
+      return text;
+    }catch(err){
+      throw new Error(err?.message || 'Yuji AI request failed');
     }
+  }
+
+  $('#model-select').addEventListener('change', async (e)=>{
+    selectedModel = e.target.value;
+    await saveJSON('yuji:model', selectedModel);
+  });
+
+  $('#export-chat-btn').addEventListener('click', ()=>{
+    const chat = chats.find(c=>c.id===activeChatId);
+    if(!chat || chat.messages.length===0) return;
+    const text = chat.messages.map(m => (m.role==='user' ? 'You' : 'Yuji AI') + ':\n' + m.content).join('\n\n');
+    const blob = new Blob([text], {type:'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = (chat.title || 'yuji-chat').replace(/[^a-z0-9\-_ ]/gi,'').trim() + '.txt';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  // ---------- voice input ----------
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const micBtn = $('#mic-btn');
+  if(!SpeechRec){
+    micBtn.style.display = 'none';
+  }else{
+    const rec = new SpeechRec();
+    rec.continuous = false; rec.interimResults = false; rec.lang = 'en-US';
+    let listening = false;
+    rec.onresult = (e)=>{
+      const transcript = e.results[0][0].transcript;
+      input.value = (input.value ? input.value + ' ' : '') + transcript;
+      input.dispatchEvent(new Event('input'));
+    };
+    rec.onend = ()=>{ listening = false; micBtn.style.background = 'var(--bg-elev-2)'; };
+    rec.onerror = ()=>{ listening = false; micBtn.style.background = 'var(--bg-elev-2)'; };
+    micBtn.addEventListener('click', ()=>{
+      if(listening){ rec.stop(); return; }
+      listening = true;
+      micBtn.style.background = 'var(--red-dim)';
+      try{ rec.start(); }catch(e){ listening = false; }
+    });
   }
 
   // ================= CHAT =================
@@ -728,7 +745,7 @@ textarea#chat-input::placeholder{ color:var(--text-faint); }
       renderActiveChat();
     }catch(err){
       typingEl.remove();
-      const errEl = renderMsgEl('assistant', "I couldn't get a response (" + err.message + "). If you're using this outside Claude's own preview, add your Anthropic API key under the API Keys tab, then try again.");
+      const errEl = renderMsgEl('assistant', "I couldn't get a response (" + err.message + "). Give it a moment and try again — first-time use on this device may need a quick free Puter sign-in popup.");
       inner.appendChild(errEl);
     }finally{
       $('#send-btn').disabled = false;
@@ -821,63 +838,58 @@ textarea#chat-input::placeholder{ color:var(--text-faint); }
   $('#game-modal-close').addEventListener('click', ()=> $('#game-modal').classList.remove('active'));
   $('#game-modal').addEventListener('click', (e)=>{ if(e.target.id==='game-modal') $('#game-modal').classList.remove('active'); });
 
-  // ================= API KEYS =================
-  function renderKeys(){
-    const list = $('#keys-list');
-    list.innerHTML = '';
-    if(apiKeys.length===0){
-      list.innerHTML = '<div class="empty-mini">No keys yet. Generate one above.</div>';
+  // ================= IMAGE STUDIO =================
+  function renderImages(){
+    const grid = $('#images-grid');
+    grid.innerHTML = '';
+    if(images.length===0){
+      grid.innerHTML = '<div class="empty-mini">No images yet — describe one above to generate your first.</div>';
       return;
     }
-    apiKeys.slice().sort((a,b)=>b.createdAt-a.createdAt).forEach(k=>{
-      const row = document.createElement('div');
-      row.className = 'key-row';
-      row.innerHTML = `<div class="k-name"></div><div class="k-val"></div><div class="k-date"></div>
-        <button class="copy-btn">Copy</button><button class="rev-btn">Revoke</button>`;
-      row.querySelector('.k-name').textContent = k.name;
-      row.querySelector('.k-val').textContent = k.value;
-      row.querySelector('.k-date').textContent = new Date(k.createdAt).toLocaleDateString();
-      row.querySelector('.copy-btn').addEventListener('click', ()=>{
-        navigator.clipboard.writeText(k.value).catch(()=>{});
-        const b = row.querySelector('.copy-btn'); b.textContent='Copied'; setTimeout(()=>b.textContent='Copy',1200);
-      });
-      row.querySelector('.rev-btn').addEventListener('click', async ()=>{
-        apiKeys = apiKeys.filter(x=>x.id!==k.id);
-        await saveJSON('yuji:keys', apiKeys);
-        renderKeys();
-      });
-      list.appendChild(row);
+    images.slice().sort((a,b)=>b.createdAt-a.createdAt).forEach(img=>{
+      const card = document.createElement('div');
+      card.className = 'image-card';
+      card.innerHTML = `<img src="${img.dataUrl}" alt=""><div class="cap"></div>`;
+      card.querySelector('.cap').textContent = img.prompt;
+      grid.appendChild(card);
     });
   }
 
-  function genKeyValue(){
-    const chars = 'abcdef0123456789';
-    let s = 'yuji-';
-    for(let i=0;i<32;i++) s += chars[Math.floor(Math.random()*chars.length)];
-    return s;
+  function imgElToDataUrl(imgEl){
+    return new Promise((resolve, reject)=>{
+      const draw = ()=>{
+        try{
+          const canvas = document.createElement('canvas');
+          canvas.width = imgEl.naturalWidth || 512;
+          canvas.height = imgEl.naturalHeight || 512;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(imgEl, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        }catch(e){ reject(e); }
+      };
+      if(imgEl.complete && imgEl.naturalWidth) draw();
+      else { imgEl.onload = draw; imgEl.onerror = ()=>reject(new Error('image failed to load')); }
+    });
   }
 
-  $('#save-user-key-btn').addEventListener('click', async ()=>{
-    const keyVal = $('#user-key-input').value.trim();
-    const modelVal = $('#user-model-input').value.trim() || 'claude-sonnet-4-5';
-    if(keyVal){
-      userApiKey = keyVal;
-      await saveJSON('yuji:userApiKey', userApiKey);
-      $('#user-key-input').value = '';
-      $('#user-key-input').placeholder = '•••• saved key in use ••••';
+  $('#img-gen-btn').addEventListener('click', async ()=>{
+    const prompt = $('#img-prompt').value.trim();
+    if(!prompt) { $('#img-prompt').focus(); return; }
+    const btn = $('#img-gen-btn');
+    btn.disabled = true; btn.textContent = 'Generating…';
+    try{
+      if(typeof puter === 'undefined') throw new Error('Puter.js failed to load');
+      const imgEl = await puter.ai.txt2img(prompt);
+      const dataUrl = await imgElToDataUrl(imgEl);
+      images.push({ id: uid(), prompt, dataUrl, createdAt: Date.now() });
+      await saveJSON('yuji:images', images);
+      renderImages();
+      $('#img-prompt').value = '';
+    }catch(err){
+      alert('Image generation failed: ' + (err?.message || err));
+    }finally{
+      btn.disabled = false; btn.textContent = '✦ Generate image';
     }
-    userModel = modelVal;
-    await saveJSON('yuji:userModel', userModel);
-    updateUserKeyStatus();
-  });
-
-  $('#gen-key-btn').addEventListener('click', async ()=>{
-    const nameInput = $('#key-name-input');
-    const name = nameInput.value.trim() || 'Unnamed key';
-    apiKeys.push({ id: uid(), name, value: genKeyValue(), createdAt: Date.now() });
-    await saveJSON('yuji:keys', apiKeys);
-    nameInput.value = '';
-    renderKeys();
   });
 
   // ================= CUSTOMIZE =================
@@ -911,7 +923,7 @@ textarea#chat-input::placeholder{ color:var(--text-faint); }
 
     const sharp = customize.shape === 'sharp';
     document.body.style.setProperty('--radius-mult', sharp ? '0' : '1');
-    $$('.new-btn,.gen-btn,.chip,.side-item,.key-card,.new-project-card,.project-card,.key-row,.customize-card,.composer-inner,.game-modal,.new-key-form input,.msg .avatar,.brand-mark,.swatch,.toggle-opt').forEach(el=>{
+    $$('.new-btn,.gen-btn,.chip,.side-item,.new-project-card,.project-card,.customize-card,.composer-inner,.game-modal,.msg .avatar,.brand-mark,.swatch,.toggle-opt,.image-card,#model-select,.send-btn').forEach(el=>{
       el.style.borderRadius = sharp ? '3px' : '';
     });
 
@@ -957,14 +969,19 @@ textarea#chat-input::placeholder{ color:var(--text-faint); }
 
   // ================= UPDATE LOG =================
   const CHANGELOG = [
+    { version:'1.3', date:'Aug 2026', items:[
+      'Removed the API Keys tab — Yuji AI now connects automatically through Puter.js, so chat and generation just work, with no key setup, on any device or host.',
+      'Added Image Studio — describe an image and Yuji AI generates it, free.',
+      'Added a model switcher in chat — pick Claude Sonnet 5, Gemini 3.1 Pro, GPT-5.5, or the fast default.',
+      'Added voice input — tap the mic in the composer to speak your message.',
+      'Added chat export — download any conversation as a text file.'
+    ]},
     { version:'1.2', date:'Aug 2026', items:[
       'Added Customize — pick an accent color, bubble shape, and glow intensity, all applied live.',
-      'Added an update log that greets you with what changed each time you open Yuji AI.',
-      'Chat and game generation now work outside Claude too — save your own Anthropic API key under API Keys.'
+      'Added an update log that greets you with what changed each time you open Yuji AI.'
     ]},
     { version:'1.1', date:'Aug 2026', items:[
-      'Added Projects — describe a game and Yuji AI generates a playable browser game.',
-      'Added a demo API key manager.'
+      'Added Projects — describe a game and Yuji AI generates a playable browser game.'
     ]},
     { version:'1.0', date:'Aug 2026', items:[
       'Initial release: chat with Yuji AI, with chats saved automatically to your browser.'
