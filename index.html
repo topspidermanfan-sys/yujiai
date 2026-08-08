@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yuji AI</title>
+<style>
+  :root{
+    --bg:#0B0B0D;
+    --panel:#18141A;
+    --panel-2:#221B20;
+    --panel-3:#0F0C0E;
+    --ink:#000000;
+    --paper:#EFE7D8;
+    --red:#FF2D2D;
+    --red-deep:#B4141A;
+    --red-light:#FFB4B0;
+    --text:#F3ECE6;
+    --muted:#9C8F92;
+    --danger:#FF5A5A;
+    --radius:4px;
+    --cut:14px;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --display: "Arial Narrow", "Helvetica Neue Condensed", Impact, var(--sans);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);}
+  #app{display:flex;height:100vh;min-height:560px;overflow:hidden;
+    background-image: radial-gradient(circle, rgba(255,45,45,0.16) 1px, transparent 1.5px);
+    background-size:13px 13px;
+  }
+  .panel-cut{clip-path:polygon(0 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%);}
+  /* ---------- Sidebar ---------- */
+  .sidebar{width:224px;flex-shrink:0;background:var(--panel-3);border-right:2px solid #000;
+    display:flex;flex-direction:column;padding:20px 14px;}
+  .brand{display:flex;flex-direction:column;gap:2px;margin-bottom:20px;padding:0 2px;}
+  .brand-row{display:flex;align-items:center;gap:10px;}
+  .brand-logo{width:34px;height:34px;flex-shrink:0;}
+  .brand-mark{font-family:var(--display);font-weight:800;font-size:22px;letter-spacing:1px;color:var(--text);
+    text-transform:uppercase;line-height:1;}
+  .brand-sub{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:6px;font-family:var(--mono);}
+  .plan-chip{display:inline-flex;align-items:center;gap:5px;margin-top:9px;padding:3px 9px 3px 7px;background:var(--red);
+    color:var(--paper);font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;
+    border:1.5px solid #000;width:fit-content;cursor:pointer;}
+  .plan-chip:hover{filter:brightness(1.1);}
+  .nav{display:flex;flex-direction:column;gap:5px;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;cursor:pointer;border:1.5px solid transparent;
+    color:var(--muted);font-size:13px;font-weight:700;letter-spacing:0.3px;text-transform:uppercase;user-select:none;}
+  .nav-item:hover{color:var(--text);border-color:#2a2226;}
+  .nav-item.active{background:var(--red);color:var(--paper);border-color:#000;box-shadow:2px 2px 0 #000;}
+  .nav-icon{width:15px;height:15px;flex-shrink:0;}
+  .sidebar-footer{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding:8px 4px;font-size:11px;color:var(--muted);font-family:var(--mono);}
+  .sidebar-footer .status-row{display:flex;align-items:center;gap:8px;}
+  .sidebar-footer .credit{font-size:10px;letter-spacing:0.3px;opacity:0.8;}
+  .sidebar-footer .credit b{color:var(--red-light);font-weight:700;}
+  .led{width:7px;height:7px;border-radius:50%;background:var(--red);box-shadow:0 0 7px var(--red);animation:blink 2.2s infinite;flex-shrink:0;}
+  @keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+  /* ---------- Main ---------- */
+  .main{flex:1;display:flex;flex-direction:column;min-width:0;}
+  .view{flex:1;display:none;min-height:0;overflow:hidden;}
+  .view.active{display:flex;}
+  /* ---------- Chat view ---------- */
+  #view-chat{flex-direction:row;}
+  .chat-list{width:230px;flex-shrink:0;border-right:2px solid #000;display:flex;flex-direction:column;padding:16px 10px;overflow-y:auto;background:var(--panel-3);}
+  .new-chat-btn{display:flex;align-items:center;justify-content:center;gap:6px;background:var(--red);border:1.5px solid #000;box-shadow:2px 2px 0 #000;
+    color:var(--paper);padding:9px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;cursor:pointer;margin-bottom:12px;}
+  .new-chat-btn:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 #000;}
+  .new-chat-btn:active{transform:translate(1px,1px);box-shadow:0 0 0 #000;}
+  .chat-item{padding:9px 10px;cursor:pointer;font-size:12.5px;color:var(--muted);margin-bottom:3px;border:1.5px solid transparent;
+    display:flex;justify-content:space-between;align-items:center;gap:6px;}
+  .chat-item:hover{border-color:#2a2226;color:var(--text);}
+  .chat-item.active{background:var(--panel-2);color:var(--text);border-color:var(--red-deep);}
+  .chat-item-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
+  .chat-item-del{opacity:0;font-size:12px;color:var(--danger);}
+  .chat-item:hover .chat-item-del{opacity:0.7;}
+  .chat-item-del:hover{opacity:1 !important;}
+  .chat-main{flex:1;display:flex;flex-direction:column;min-width:0;}
+  .chat-thread{flex:1;overflow-y:auto;padding:26px 8%;display:flex;flex-direction:column;gap:16px;}
+  .chat-empty{margin:auto;text-align:center;color:var(--muted);max-width:360px;}
+  .chat-empty h2{color:var(--text);font-family:var(--display);font-size:20px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+  .chat-empty p{font-size:13px;line-height:1.6;}
+  .msg{max-width:78%;padding:11px 15px;font-size:14px;line-height:1.55;white-space:pre-wrap;border:1.5px solid #000;}
+  .msg.user{align-self:flex-end;background:var(--red-deep);color:#fff;}
+  .msg.assistant{align-self:flex-start;background:var(--panel-2);color:var(--text);clip-path:polygon(0 0,100% 0,100% 100%,10px 100%,0 calc(100% - 10px));}
+  .msg.error{align-self:flex-start;background:rgba(255,90,90,0.12);color:var(--danger);border:1.5px solid var(--danger);font-family:var(--mono);font-size:12.5px;}
+  .msg.thinking{align-self:flex-start;color:var(--muted);font-family:var(--mono);font-size:12.5px;border-color:transparent;}
+  .composer{border-top:2px solid #000;padding:14px 8%;display:flex;gap:10px;align-items:flex-end;background:var(--panel-3);}
+  .composer textarea{flex:1;resize:none;background:var(--panel);border:1.5px solid #000;
+    color:var(--text);padding:11px 13px;font-size:14px;font-family:var(--sans);max-height:140px;outline:none;}
+  .composer textarea:focus{border-color:var(--red);}
+  .send-btn{background:var(--red);color:#fff;border:1.5px solid #000;box-shadow:2px 2px 0 #000;width:42px;height:42px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;font-weight:800;}
+  .send-btn:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 #000;}
+  .send-btn:disabled{opacity:0.4;cursor:default;transform:none;box-shadow:2px 2px 0 #000;}
+  /* ---------- Generic view padding ---------- */
+  .padded-view{flex-direction:column;padding:30px 5% 24px;overflow-y:auto;}
+  .view-header{margin-bottom:20px;}
+  .view-header h1{font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:24px;margin:0 0 6px;letter-spacing:0.5px;}
+  .view-header .rule{width:56px;height:5px;background:var(--red);margin-bottom:10px;}
+  .view-header p{color:var(--muted);font-size:13px;margin:0;max-width:640px;line-height:1.6;}
+  /* ---------- Keys view ---------- */
+  .key-form{display:flex;gap:10px;margin-bottom:18px;}
+  .key-form input{flex:1;max-width:280px;background:var(--panel);border:1.5px solid #000;
+    color:var(--text);padding:9px 12px;font-size:13px;outline:none;}
+  .key-form input:focus{border-color:var(--red);}
+  .btn{background:var(--panel-2);border:1.5px solid #000;box-shadow:2px 2px 0 #000;color:var(--text);
+    padding:9px 16px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.4px;cursor:pointer;}
+  .btn:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 #000;}
+  .btn:active{transform:translate(1px,1px);box-shadow:0 0 0 #000;}
+  .btn.primary{background:var(--red);color:#fff;}
+  .btn.danger{color:var(--danger);}
+  table.keys-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  table.keys-table th{text-align:left;color:var(--muted);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;
+    padding:8px 10px;border-bottom:2px solid #000;}
+  table.keys-table td{padding:11px 10px;border-bottom:1px solid #2a2226;vertical-align:middle;}
+  .key-val{font-family:var(--mono);color:var(--red-light);}
+  .empty-note{color:var(--muted);font-size:13px;padding:20px 4px;font-family:var(--mono);}
+  .warn-box{background:rgba(255,180,176,0.08);border:1.5px solid var(--red-light);color:var(--red-light);
+    padding:10px 14px;font-size:12px;line-height:1.6;margin-bottom:18px;max-width:640px;}
+  .limit-note{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:14px;}
+  .limit-note b{color:var(--red-light);}
+  .limit-hit{background:rgba(255,45,45,0.1);border:1.5px solid var(--red);color:var(--red-light);padding:10px 14px;
+    font-size:12.5px;margin-bottom:14px;max-width:640px;display:none;}
+  .limit-hit.show{display:block;}
+  .limit-hit a{color:var(--paper);font-weight:700;cursor:pointer;text-decoration:underline;}
+  /* ---------- Projects view ---------- */
+  .builder-box{background:var(--panel);border:1.5px solid #000;box-shadow:3px 3px 0 #000;padding:16px;margin-bottom:20px;}
+  .builder-box textarea{width:100%;background:var(--panel-3);border:1.5px solid #000;
+    color:var(--text);padding:11px 13px;font-size:13.5px;font-family:var(--sans);resize:none;outline:none;min-height:64px;margin-bottom:10px;}
+  .builder-box textarea:focus{border-color:var(--red);}
+  .templates-hint{font-size:11px;color:var(--muted);margin-top:8px;font-family:var(--mono);}
+  .build-log{font-family:var(--mono);font-size:11.5px;color:var(--red-light);background:var(--panel-3);border:1px solid #2a2226;
+    padding:10px 12px;margin-top:12px;display:none;max-height:120px;overflow-y:auto;line-height:1.7;}
+  .build-log.show{display:block;}
+  .build-log .line{opacity:0;animation:fadein .3s forwards;}
+  @keyframes fadein{to{opacity:1;}}
+  .projects-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;}
+  .project-card{background:var(--panel);border:1.5px solid #000;padding:14px;cursor:pointer;transition:transform .1s;
+    clip-path:polygon(0 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%);}
+  .project-card:hover{transform:translate(-1px,-1px);}
+  .project-swatch{width:100%;height:64px;margin-bottom:10px;}
+  .project-card h3{font-size:13px;margin:0 0 4px;color:var(--text);}
+  .project-card p{font-size:11px;color:var(--muted);margin:0;font-family:var(--mono);text-transform:uppercase;letter-spacing:0.5px;}
+  .game-stage{display:none;flex-direction:column;}
+  .game-stage.show{display:flex;}
+  .game-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:12px;flex-wrap:wrap;}
+  .game-top h2{font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:19px;margin:0 0 4px;}
+  .game-top .tagline{color:var(--muted);font-size:12.5px;max-width:440px;}
+  .game-scoreboard{font-family:var(--mono);font-size:13px;color:var(--red-light);display:flex;gap:16px;}
+  canvas{background:var(--panel-3);border:1.5px solid #000;max-width:100%;}
+  .game-controls{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .game-hint{font-size:11.5px;color:var(--muted);margin-top:8px;font-family:var(--mono);}
+  /* ---------- Plan view ---------- */
+  .plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;max-width:920px;margin-bottom:22px;}
+  .plan-card{background:var(--panel);border:1.5px solid #000;box-shadow:4px 4px 0 #000;padding:20px;position:relative;
+    display:flex;flex-direction:column;gap:12px;}
+  .plan-card.featured{border-color:var(--red);box-shadow:4px 4px 0 var(--red);}
+  .plan-badge{position:absolute;top:-11px;right:14px;background:var(--red);color:var(--paper);font-family:var(--mono);
+    font-size:10px;font-weight:800;letter-spacing:0.6px;padding:3px 9px;border:1.5px solid #000;text-transform:uppercase;}
+  .plan-name{font-family:var(--display);font-weight:800;font-size:18px;text-transform:uppercase;letter-spacing:0.5px;}
+  .plan-price{font-family:var(--mono);font-size:26px;color:var(--red-light);font-weight:700;}
+  .plan-price span{font-size:12px;color:var(--muted);font-weight:400;}
+  .plan-features{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px;font-size:12.5px;color:var(--text);}
+  .plan-features li{display:flex;gap:8px;align-items:flex-start;}
+  .plan-features li::before{content:'▸';color:var(--red);flex-shrink:0;}
+  .plan-btn{margin-top:auto;}
+  .plan-current-tag{font-family:var(--mono);font-size:11px;color:var(--red-light);text-transform:uppercase;letter-spacing:0.5px;text-align:center;padding:9px;border:1.5px dashed var(--red-light);}
+  .plan-disclosure{max-width:700px;font-size:12px;color:var(--muted);line-height:1.7;background:var(--panel-3);border:1.5px solid #2a2226;padding:14px 16px;}
+  .plan-disclosure b{color:var(--red-light);}
+  /* ---------- Mobile ---------- */
+  @media (max-width:820px){
+    #app{flex-direction:column;}
+    .sidebar{width:100%;flex-direction:row;align-items:center;padding:10px 12px;border-right:none;border-bottom:2px solid #000;}
+    .brand{margin-bottom:0;margin-right:auto;}
+    .plan-chip{display:none;}
+    .nav{flex-direction:row;}
+    .sidebar-footer{display:none;}
+    #view-chat{flex-direction:column;}
+    .chat-list{width:100%;flex-direction:row;overflow-x:auto;border-right:none;border-bottom:2px solid #000;padding:10px;}
+    .chat-item{flex-shrink:0;}
+    .msg{max-width:90%;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-row">
+        <svg class="brand-logo" viewBox="0 0 48 48">
+          <polygon points="24,2 29,17 45,17 32,27 37,43 24,33 11,43 16,27 3,17 19,17"
+            fill="#FF2D2D" stroke="#000" stroke-width="2" stroke-linejoin="round"/>
+          <text x="24" y="30" text-anchor="middle" font-family="Arial Narrow, sans-serif" font-weight="800" font-size="17" fill="#0B0B0D">Y</text>
+        </svg>
+        <div class="brand-mark">Yuji AI</div>
+      </div>
+      <div class="brand-sub">chat · keys · builds</div>
+      <div class="plan-chip" id="planChip" data-view-target="plan">free plan · upgrade</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-item active" data-view="chat">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v12H8l-4 4V4z"/></svg>
+        Chat
+      </div>
+      <div class="nav-item" data-view="keys">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="12" r="4"/><path d="M12 12h9M17 12v4M20 12v3"/></svg>
+        API Keys
+      </div>
+      <div class="nav-item" data-view="projects">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="7" height="7"/><rect x="13" y="4" width="7" height="7"/><rect x="4" y="13" width="7" height="7"/><rect x="13" y="13" width="7" height="7"/></svg>
+        Projects
+      </div>
+      <div class="nav-item" data-view="plan">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 6.6L21 9l-5 4.6L17.5 21 12 17.3 6.5 21 8 13.6 3 9l6.6-.4z"/></svg>
+        Plan
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="status-row"><span class="led"></span> system nominal</div>
+      <div class="credit">all credit to <b>Eggfr</b></div>
+    </div>
+  </aside>
+  <main class="main">
+    <!-- CHAT -->
+    <section id="view-chat" class="view active">
+      <div class="chat-list">
+        <button class="new-chat-btn" id="newChatBtn">+ New chat</button>
+        <div class="limit-hit" id="chatLimitHit">Free plan tops out at <b>3 saved chats</b>. <a data-view-target="plan">Upgrade for more →</a></div>
+        <div id="chatListItems"></div>
+      </div>
+      <div class="chat-main">
+        <div class="chat-thread" id="chatThread">
+          <div class="chat-empty">
+            <h2>Start a thread</h2>
+            <p>Messages here are answered live and saved to your account automatically. Pick up any thread from the list on the left.</p>
+          </div>
+        </div>
+        <div class="composer">
+          <textarea id="chatInput" rows="1" placeholder="Message Yuji AI…"></textarea>
+          <button class="send-btn" id="sendBtn">↑</button>
+        </div>
+      </div>
+    </section>
+    <!-- KEYS -->
+    <section id="view-keys" class="view padded-view">
+      <div class="view-header">
+        <h1>API Keys</h1>
+        <div class="rule"></div>
+        <p>Issue named credentials for this workspace. Each one is generated locally and stored to your account.</p>
+      </div>
+      <div class="warn-box">These are preview credentials, not a live multi-tenant API service — this page has no backend of its own. Wire the key check into your own server if you want it to actually gate requests; the format and storage here are ready to plug in.</div>
+      <div class="limit-hit" id="keyLimitHit">Free plan allows <b>1 key</b>. <a data-view-target="plan">Upgrade for more →</a></div>
+      <div class="key-form">
+        <input id="keyNameInput" type="text" placeholder='Key name, e.g. "prod-bot"' maxlength="40">
+        <button class="btn primary" id="genKeyBtn">Generate key</button>
+      </div>
+      <table class="keys-table" id="keysTable">
+        <thead><tr><th>Name</th><th>Key</th><th>Created</th><th></th></tr></thead>
+        <tbody id="keysTableBody"></tbody>
+      </table>
+      <div class="empty-note" id="keysEmptyNote" style="display:none;">No keys yet. Generate one above.</div>
+    </section>
+    <!-- PROJECTS -->
+    <section id="view-projects" class="view padded-view">
+      <div class="view-header">
+        <h1>Build a game</h1>
+        <div class="rule"></div>
+        <p>Describe it in a sentence — Yuji AI designs the theme and drops it into a working, playable engine.</p>
+      </div>
+      <div class="limit-hit" id="projLimitHit">Free plan saves up to <b>2 projects</b>. <a data-view-target="plan">Upgrade for more →</a></div>
+      <div class="builder-box">
+        <textarea id="projectPrompt" placeholder="e.g. a neon paddle game where you bounce a comet, or a runner where a fox jumps cactus at night"></textarea>
+        <button class="btn primary" id="buildBtn">Build project</button>
+        <div class="templates-hint">Engines available: catcher · breakout · pong · runner — Yuji AI picks the closest fit and themes it to your prompt.</div>
+        <div class="build-log" id="buildLog"></div>
+      </div>
+      <div id="gameStage" class="game-stage">
+        <div class="game-top">
+          <div>
+            <h2 id="gameTitle"></h2>
+            <div class="tagline" id="gameTagline"></div>
+          </div>
+          <div class="game-scoreboard" id="gameScoreboard"></div>
+        </div>
+        <canvas id="gameCanvas" width="640" height="360"></canvas>
+        <div class="game-hint" id="gameHint"></div>
+        <div class="game-controls">
+          <button class="btn primary" id="playBtn">Play</button>
+          <button class="btn" id="resetBtn">Reset</button>
+          <button class="btn" id="backToGridBtn">← All projects</button>
+        </div>
+      </div>
+      <div id="projectsGridWrap">
+        <h1 style="font-family:var(--mono);font-size:13px;color:var(--muted);margin:24px 0 12px;text-transform:uppercase;letter-spacing:1px;">saved projects</h1>
+        <div class="projects-grid" id="projectsGrid"></div>
+        <div class="empty-note" id="projectsEmptyNote" style="display:none;">Nothing built yet — describe a game above to start.</div>
+      </div>
+    </section>
+    <!-- PLAN -->
+    <section id="view-plan" class="view padded-view">
+      <div class="view-header">
+        <h1>Choose your plan</h1>
+        <div class="rule"></div>
+        <p>Switching plans here is instant and free — it's a demo toggle, not a real charge. See the note below for what it takes to make it real.</p>
+      </div>
+      <div class="plan-grid" id="planGrid"></div>
+      <div class="plan-disclosure">
+        <b>Heads up:</b> this page can't process real payments on its own — it's a static front end with no server. Switching plans just changes a stored value in your account so you can see how the limits behave. To actually charge people, you'd add: a payment processor (Stripe or Paddle) to collect cards, a small backend to create checkout sessions and receive webhook events, and a database that flips the user's plan only after the processor confirms payment — never on the click alone.
+      </div>
+    </section>
+  </main>
+</div>
+<script>
+/* ================= storage helpers ================= */
+async function sGet(key, def=null){
+  try{ const r = await window.storage.get(key,false); return r? JSON.parse(r.value) : def; }
+  catch(e){ return def; }
+}
+async function sSet(key,val){
+  try{ await window.storage.set(key, JSON.stringify(val), false); return true; }
+  catch(e){ console.error('storage set failed',e); return false; }
+}
+async function sDel(key){
+  try{ await window.storage.delete(key,false); }catch(e){}
+}
+function uid(){ return Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8); }
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+/* ================= nav ================= */
+function goToView(name){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  const navEl = document.querySelector('.nav-item[data-view="'+name+'"]');
+  if(navEl) navEl.classList.add('active');
+  document.getElementById('view-'+name).classList.add('active');
+  if(name!=='projects') stopActiveGame();
+}
+document.querySelectorAll('.nav-item').forEach(el=>{
+  el.addEventListener('click', ()=> goToView(el.dataset.view));
+});
+document.addEventListener('click', (e)=>{
+  const t = e.target.closest('[data-view-target]');
+  if(t) goToView(t.dataset.viewTarget);
+});
+/* ================= Yuji AI API helper ================= */
+async function callYujiAI(messages){
+  try{
+    const resp = await fetch("/api/yujiai",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ bot:"Yuji AI", max_tokens:1000, messages })
+    });
+    const data = await resp.json();
+    if(data && data.content){
+      return data.content.filter(b=>b.type==='text').map(b=>b.text).join('\n').trim();
+    }
+    return null;
+  }catch(e){ console.error('callYujiAI failed', e); return null; }
+}
+/* ================= PLAN ================= */
+const PLANS = {
+  free: { label:'Free', price:'$0', chats:3, keys:1, projects:2 },
+  pro: { label:'Pro', price:'$9', chats:25, keys:5, projects:15 },
+  legendary: { label:'Legendary', price:'$29', chats:Infinity, keys:Infinity, projects:Infinity }
+};
+async function getPlan(){ return await sGet('account:plan','free'); }
+async function setPlan(p){ await sSet('account:plan', p); await refreshPlanChip(); await refreshPlanView(); }
+async function refreshPlanChip(){
+  const plan = await getPlan();
+  document.getElementById('planChip').textContent = plan+' plan · '+(plan==='legendary'?'manage':'upgrade');
+  document.getElementById('planChip').onclick = showPlanSoon;
+}
+function showPlanSoon(){
+  alert('Im Working On This SOON!!!');
+}
+async function refreshPlanView(){
+  const plan = await getPlan();
+  const grid = document.getElementById('planGrid');
+  grid.innerHTML='';
+  Object.entries(PLANS).forEach(([key,p])=>{
+    const isCurrent = key===plan;
+    const card=document.createElement('div');
+    card.className='plan-card'+(key==='pro'?' featured':'');
+    card.innerHTML = `
+      ${key==='pro' ? '<div class="plan-badge">Most Popular</div>' : ''}
+      <div class="plan-name">${p.label}</div>
+      <div class="plan-price">${p.price}<span> /mo</span></div>
+      <ul class="plan-features">
+        <li>${p.chats===Infinity?'Unlimited':p.chats} saved chats</li>
+        <li>${p.keys===Infinity?'Unlimited':p.keys} API key${p.keys===1?'':'s'}</li>
+        <li>${p.projects===Infinity?'Unlimited':p.projects} saved projects</li>
+      </ul>
+      ${isCurrent ? '<div class="plan-current-tag">Current plan</div>' : `<button class="btn primary plan-btn" data-plan="${key}">Switch to ${p.label}</button>`}
+    `;
+    if(!isCurrent){
+      card.querySelector('[data-plan]').addEventListener('click', showPlanSoon);
+    }
+    grid.appendChild(card);
+  });
+}
+async function checkLimit(kind, indexKey){
+  const plan = await getPlan();
+  const limit = PLANS[plan][kind];
+  const idx = await sGet(indexKey, []);
+  return { ok: idx.length < limit, limit, count: idx.length };
+}
+/* ================= CHAT ================= */
+let currentChatId = null;
+const chatThread = document.getElementById('chatThread');
+const chatListItems = document.getElementById('chatListItems');
+const chatInput = document.getElementById('chatInput');
+const sendBtn = document.getElementById('sendBtn');
+async function refreshChatList(){
+  const idx = await sGet('chats:index', []);
+  idx.sort((a,b)=>b.updated-a.updated);
+  chatListItems.innerHTML='';
+  idx.forEach(c=>{
+    const el=document.createElement('div');
+    el.className='chat-item'+(c.id===currentChatId?' active':'');
+    el.innerHTML=`<span class="chat-item-title">${escapeHtml(c.title||'New chat')}</span><span class="chat-item-del" data-id="${c.id}">✕</span>`;
+    el.addEventListener('click',(e)=>{ if(e.target.classList.contains('chat-item-del')) return; openChat(c.id); });
+    el.querySelector('.chat-item-del').addEventListener('click', async(e)=>{
+      e.stopPropagation();
+      const idx2 = await sGet('chats:index', []);
+      await sSet('chats:index', idx2.filter(x=>x.id!==c.id));
+      await sDel('chats:msg:'+c.id);
+      if(currentChatId===c.id){ currentChatId=null; renderThread([]); }
+      refreshChatList();
+    });
+    chatListItems.appendChild(el);
+  });
+}
+function renderThread(messages){
+  if(!messages.length){
+    chatThread.innerHTML = `<div class="chat-empty"><h2>Start a thread</h2><p>Messages here are answered live and saved to your account automatically. Pick up any thread from the list on the left.</p></div>`;
+    return;
+  }
+  chatThread.innerHTML='';
+  messages.forEach(m=>{
+    const el=document.createElement('div');
+    el.className='msg '+m.role;
+    el.textContent=m.content;
+    chatThread.appendChild(el);
+  });
+  chatThread.scrollTop = chatThread.scrollHeight;
+}
+async function openChat(id){
+  currentChatId=id;
+  const msgs = await sGet('chats:msg:'+id, []);
+  renderThread(msgs);
+  refreshChatList();
+}
+document.getElementById('newChatBtn').addEventListener('click', async ()=>{
+  const check = await checkLimit('chats','chats:index');
+  const warn = document.getElementById('chatLimitHit');
+  if(!check.ok){ warn.classList.add('show'); return; }
+  warn.classList.remove('show');
+  currentChatId = uid();
+  const idx = await sGet('chats:index', []);
+  idx.push({id:currentChatId, title:'New chat', updated:Date.now()});
+  await sSet('chats:index', idx);
+  await sSet('chats:msg:'+currentChatId, []);
+  renderThread([]);
+  refreshChatList();
+  chatInput.focus();
+});
+async function sendMessage(){
+  const text = chatInput.value.trim();
+  if(!text) return;
+  if(!currentChatId){
+    const check = await checkLimit('chats','chats:index');
+    if(!check.ok){ document.getElementById('chatLimitHit').classList.add('show'); return; }
+    currentChatId = uid();
+    const idx = await sGet('chats:index', []);
+    idx.push({id:currentChatId, title:text.slice(0,40), updated:Date.now()});
+    await sSet('chats:index', idx);
+  }
+  chatInput.value='';
+  chatInput.style.height='auto';
+  const msgs = await sGet('chats:msg:'+currentChatId, []);
+  msgs.push({role:'user', content:text});
+  renderThread(msgs);
+  const thinkingEl=document.createElement('div');
+  thinkingEl.className='msg thinking';
+  thinkingEl.textContent='…';
+  chatThread.appendChild(thinkingEl);
+  chatThread.scrollTop = chatThread.scrollHeight;
+  sendBtn.disabled=true;
+  const apiMessages = msgs.map(m=>({role:m.role, content:m.content}));
+  const reply = await callYujiAI(apiMessages);
+  thinkingEl.remove();
+  sendBtn.disabled=false;
+  if(reply){
+    msgs.push({role:'assistant', content:reply});
+  } else {
+    msgs.push({role:'error', content:'Could not reach the model just now. Your message was saved — try sending again.'});
+  }
+  await sSet('chats:msg:'+currentChatId, msgs);
+  const idx = await sGet('chats:index', []);
+  const entry = idx.find(c=>c.id===currentChatId);
+  if(entry){ entry.updated=Date.now(); if(entry.title==='New chat') entry.title=text.slice(0,40); }
+  await sSet('chats:index', idx);
+  renderThread(msgs);
+  refreshChatList();
+}
+sendBtn.addEventListener('click', sendMessage);
+chatInput.addEventListener('keydown', e=>{
+  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }
+});
+chatInput.addEventListener('input', ()=>{
+  chatInput.style.height='auto';
+  chatInput.style.height=Math.min(chatInput.scrollHeight,140)+'px';
+});
+/* ================= API KEYS ================= */
+function makeKey(){
+  const chars='abcdefghijklmnopqrstuvwxyz0123456789';
+  let s='';
+  for(let i=0;i<32;i++) s+=chars[Math.floor(Math.random()*chars.length)];
+  return 'yuji_sk_'+s;
+}
+async function refreshKeys(){
+  const keys = await sGet('keys:index', []);
+  const tbody = document.getElementById('keysTableBody');
+  const emptyNote = document.getElementById('keysEmptyNote');
+  tbody.innerHTML='';
+  emptyNote.style.display = keys.length? 'none':'block';
+  keys.slice().reverse().forEach(k=>{
+    const tr=document.createElement('tr');
+    const masked = k.key.slice(0,12)+'••••••••••••••••••••';
+    tr.innerHTML = `
+      <td>${escapeHtml(k.name)}</td>
+      <td class="key-val">${masked}</td>
+      <td>${new Date(k.created).toLocaleDateString()}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn" data-act="toggle">Show</button>
+        <button class="btn" data-act="copy">Copy</button>
+        <button class="btn danger" data-act="revoke">Revoke</button>
+      </td>`;
+    const tdKey = tr.querySelector('.key-val');
+    tr.querySelector('[data-act="toggle"]').addEventListener('click', (e)=>{
+      const showing = tdKey.textContent === k.key;
+      tdKey.textContent = showing ? masked : k.key;
+      e.target.textContent = showing ? 'Show' : 'Hide';
+    });
+    tr.querySelector('[data-act="copy"]').addEventListener('click', (e)=>{
+      navigator.clipboard.writeText(k.key).then(()=>{
+        const old=e.target.textContent; e.target.textContent='Copied'; setTimeout(()=>e.target.textContent=old,1200);
+      });
+    });
+    tr.querySelector('[data-act="revoke"]').addEventListener('click', async ()=>{
+      const cur = await sGet('keys:index', []);
+      await sSet('keys:index', cur.filter(x=>x.id!==k.id));
+      refreshKeys();
+    });
+    tbody.appendChild(tr);
+  });
+}
+document.getElementById('genKeyBtn').addEventListener('click', async ()=>{
+  const check = await checkLimit('keys','keys:index');
+  const warn = document.getElementById('keyLimitHit');
+  if(!check.ok){ warn.classList.add('show'); return; }
+  warn.classList.remove('show');
+  const nameInput=document.getElementById('keyNameInput');
+  const name = nameInput.value.trim() || 'unnamed-key';
+  const keys = await sGet('keys:index', []);
+  keys.push({id:uid(), name, key:makeKey(), created:Date.now()});
+  await sSet('keys:index', keys);
+  nameInput.value='';
+  refreshKeys();
+});
+/* ================= PROJECTS / GAME BUILDER ================= */
+const TEMPLATES = ['catcher','breakout','pong','runner'];
+function fallbackSpec(prompt){
+  const p = prompt.toLowerCase();
+  let template='catcher';
+  if(/pong|paddle.*bounce|bounce.*paddle/.test(p)) template='pong';
+  else if(/brick|breakout|block/.test(p)) template='breakout';
+  else if(/jump|run|platform|obstacle|dash|dodge/.test(p)) template='runner';
+  else if(/catch|collect|falling|fruit/.test(p)) template='catcher';
+  const palette = ['#FFADAD','#FF3B3B','#FF6B6B','#D62828','#FFB4B0','#B4141A','#FF7A00','#A855F7','#22C55E','#38BDF8'];
+  let hash = 0;
+  for(let i=0;i<prompt.length;i++) hash = ((hash<<5)-hash)+prompt.charCodeAt(i)|0;
+  const primary = palette[Math.abs(hash)%palette.length];
+  const titleBase = prompt.replace(/[^a-z0-9 ]/gi,' ').replace(/\s+/g,' ').trim();
+  const title = titleBase ? titleBase.slice(0,1).toUpperCase()+titleBase.slice(1,32) : 'Untitled Build';
+  const tags = {
+    catcher:'Catch the targets before they hit the ground.',
+    breakout:'Smash through the blocks and clear the board.',
+    pong:'Outplay the rival paddle and reach seven first.',
+    runner:'Keep moving, jump the obstacles, and beat your score.'
+  };
+  return {
+    template,
+    title,
+    tagline: tags[template]+' Theme: '+prompt.slice(0,55),
+    playerLabel: 'Player',
+    targetLabel: 'Target',
+    primaryColor: primary,
+    secondaryColor: '#F3ECE6'
+  };
+}
+async function buildLog(lines){
+  const box = document.getElementById('buildLog');
+  box.classList.add('show');
+  box.innerHTML='';
+  for(const l of lines){
+    const d=document.createElement('div');
+    d.className='line';
+    d.textContent='> '+l;
+    box.appendChild(d);
+    box.scrollTop = box.scrollHeight;
+    await new Promise(r=>setTimeout(r, 260+Math.random()*220));
+  }
+}
+document.getElementById('buildBtn').addEventListener('click', async ()=>{
+  const check = await checkLimit('projects','projects:index');
+  const warn = document.getElementById('projLimitHit');
+  if(!check.ok){ warn.classList.add('show'); return; }
+  warn.classList.remove('show');
+  const promptEl = document.getElementById('projectPrompt');
+  const prompt = promptEl.value.trim();
+  if(!prompt) return;
+  const btn = document.getElementById('buildBtn');
+  btn.disabled = true;
+  await buildLog(['reading prompt', 'sketching mechanics', 'choosing engine']);
+  const instruction = `Design a tiny 2D browser game concept from this idea: "${prompt}"
+Reply with ONLY raw JSON (no markdown fences, no commentary), matching exactly this shape:
+{"template":"catcher|breakout|pong|runner","title":"short game title","tagline":"one short punchy sentence describing the game","playerLabel":"1-2 word name for the player-controlled piece","targetLabel":"1-2 word name for what the player is catching/hitting/avoiding","primaryColor":"#hexcolor","secondaryColor":"#hexcolor"}
+Pick the template that best matches: catcher = move left/right to catch falling items; breakout = paddle and ball breaking bricks; pong = paddle vs paddle ball volley; runner = jump over obstacles in a side-scroller. Colors should suit the theme and be readable on a dark background.`;
+  const raw = await callYujiAI([{role:'user', content: instruction}]);
+  let spec = null;
+  if(raw){
+    try{
+      const cleaned = raw.replace(/^```json\s*|```$/g, '').trim();      const parsed = JSON.parse(cleaned);
+      if(TEMPLATES.includes(parsed.template)) spec = parsed;
+    }catch(e){ /* fall through to fallback */ }
+  }
+  if(!spec) spec = fallbackSpec(prompt);
+  await buildLog(['compiling world', 'placing objects', 'ready']);
+  document.getElementById('buildLog').classList.remove('show');
+  btn.disabled = false;
+  promptEl.value='';
+  const id = uid();
+  const project = {id, name:spec.title, type:spec.template, created:Date.now(), config:spec};
+  const idx = await sGet('projects:index', []);
+  idx.push({id, name:spec.title, type:spec.template, created:project.created});
+  await sSet('projects:index', idx);
+  await sSet('projects:cfg:'+id, spec);
+  refreshProjectsGrid();
+  openProject(spec);
+});
+async function refreshProjectsGrid(){
+  const idx = await sGet('projects:index', []);
+  const grid = document.getElementById('projectsGrid');
+  const empty = document.getElementById('projectsEmptyNote');
+  grid.innerHTML='';
+  empty.style.display = idx.length? 'none':'block';
+  idx.slice().reverse().forEach(p=>{
+    const card=document.createElement('div');
+    card.className='project-card';
+    card.innerHTML = `<div class="project-swatch" style="background:linear-gradient(135deg, ${swatchColor(p.type)}22, ${swatchColor(p.type)}88);"></div>
+      <h3>${escapeHtml(p.name)}</h3><p>${p.type}</p>`;
+    card.addEventListener('click', async ()=>{
+      const cfg = await sGet('projects:cfg:'+p.id, null);
+      if(cfg) openProject(cfg);
+    });
+    grid.appendChild(card);
+  });
+}
+function swatchColor(type){
+  return {catcher:'#FFADAD',breakout:'#FF3B3B',pong:'#FF6B6B',runner:'#D62828'}[type] || '#FFADAD';
+}
+function openProject(spec){
+  document.getElementById('gameStage').classList.add('show');
+  document.getElementById('projectsGridWrap').style.display='none';
+  document.getElementById('gameTitle').textContent = spec.title;
+  document.getElementById('gameTagline').textContent = spec.tagline;
+  currentSpec = spec;
+  stopActiveGame();
+  resetGameUI();
+}
+
+function downloadCurrentGame(){
+  if(!currentSpec) return;
+  const cfg = JSON.stringify(currentSpec).replace(/</g,'\\u003c');
+  const gameHtml = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>${escapeHtml(currentSpec.title)}</title>
+<style>
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0B0B0D;color:#F3ECE6;font-family:Arial,sans-serif}
+.wrap{width:min(680px,94vw);text-align:center}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+h1{font-size:22px;text-transform:uppercase;margin:0}.tag{color:#9C8F92;font-size:13px;margin:4px 0 12px}
+canvas{width:100%;max-width:640px;background:#0F0C0E;border:2px solid #000;display:block}
+.hint{color:#9C8F92;font:12px monospace;margin-top:9px}
+button{margin-top:12px;background:#FF2D2D;color:#fff;border:2px solid #000;padding:10px 18px;font-weight:800;cursor:pointer}
+</style></head><body><div class="wrap"><div class="top"><h1 id="title"></h1><span id="score">score 0</span></div>
+<div class="tag" id="tag"></div><canvas id="game" width="640" height="360"></canvas><div class="hint" id="hint"></div><button onclick="location.reload()">Restart</button></div>
+<script>
+const cfg=${cfg};
+document.getElementById('title').textContent=cfg.title;
+document.getElementById('tag').textContent=cfg.tagline;
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d'),scoreEl=document.getElementById('score'),hintEl=document.getElementById('hint');
+const W=canvas.width,H=canvas.height; let score=0, keys={}, running=true;
+function end(msg){running=false;ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(0,0,W,H);ctx.fillStyle='#fff';ctx.font='20px monospace';ctx.textAlign='center';ctx.fillText(msg,W/2,H/2);}
+function setScore(n){score=n;scoreEl.textContent='score '+n;}
+window.onkeydown=e=>{keys[e.key]=true;if((e.key===' '||e.key==='ArrowUp')&&window.player&&player.onGround){player.vy=-12;player.onGround=false;}};
+window.onkeyup=e=>keys[e.key]=false;
+if(cfg.template==='catcher'){
+ hintEl.textContent='Arrow keys or mouse · catch the falling items';
+ const player={w:80,h:14,x:W/2-40,y:H-26,speed:7}; window.player=player; let items=[],spawn=0,lives=3;
+ canvas.onmousemove=e=>{const r=canvas.getBoundingClientRect(),mx=(e.clientX-r.left)*W/r.width;player.x=Math.max(0,Math.min(W-player.w,mx-player.w/2));};
+ (function loop(){if(!running)return;if(keys.ArrowLeft)player.x-=7;if(keys.ArrowRight)player.x+=7;player.x=Math.max(0,Math.min(W-player.w,player.x));if(++spawn>45){spawn=0;items.push({x:Math.random()*(W-16),y:-16,r:8,v:2+Math.random()*2.5});}items.forEach(i=>i.y+=i.v);items=items.filter(i=>{if(i.y>H){lives--;return false}if(i.y+i.r>player.y&&i.x>player.x-i.r&&i.x<player.x+player.w+i.r){setScore(score+1);return false}return true});ctx.clearRect(0,0,W,H);ctx.fillStyle=cfg.primaryColor;ctx.fillRect(player.x,player.y,player.w,player.h);ctx.fillStyle=cfg.secondaryColor;items.forEach(i=>{ctx.beginPath();ctx.arc(i.x,i.y,i.r,0,Math.PI*2);ctx.fill()});ctx.fillStyle='#9C8F92';ctx.font='12px monospace';ctx.textAlign='left';ctx.fillText('lives '+lives,10,20);if(lives<=0)return end('Game over — score '+score);requestAnimationFrame(loop)})()
+}else if(cfg.template==='breakout'){
+ hintEl.textContent='Arrow keys or mouse · break every brick';
+ const paddle={w:90,h:12,x:W/2-45,y:H-24},ball={x:W/2,y:H-40,r:7,vx:3.4,vy:-4};let bricks=[];for(let r=0;r<4;r++)for(let c=0;c<8;c++)bricks.push({x:10+c*((W-20)/8),y:40+r*24,w:(W-20)/8-6,h:18,alive:true});
+ canvas.onmousemove=e=>{const r=canvas.getBoundingClientRect(),mx=(e.clientX-r.left)*W/r.width;paddle.x=Math.max(0,Math.min(W-paddle.w,mx-paddle.w/2));};
+ (function loop(){if(!running)return;if(keys.ArrowLeft)paddle.x-=8;if(keys.ArrowRight)paddle.x+=8;paddle.x=Math.max(0,Math.min(W-paddle.w,paddle.x));ball.x+=ball.vx;ball.y+=ball.vy;if(ball.x<ball.r||ball.x>W-ball.r)ball.vx*=-1;if(ball.y<ball.r)ball.vy*=-1;if(ball.y+ball.r>paddle.y&&ball.y+ball.r<paddle.y+paddle.h&&ball.x>paddle.x&&ball.x<paddle.x+paddle.w)ball.vy=-Math.abs(ball.vy);bricks.forEach(b=>{if(b.alive&&ball.x>b.x&&ball.x<b.x+b.w&&ball.y-ball.r<b.y+b.h&&ball.y+ball.r>b.y){b.alive=false;ball.vy*=-1;setScore(score+1)}});ctx.clearRect(0,0,W,H);bricks.forEach(b=>{if(b.alive){ctx.fillStyle=cfg.primaryColor;ctx.fillRect(b.x,b.y,b.w,b.h)}});ctx.fillStyle=cfg.primaryColor;ctx.fillRect(paddle.x,paddle.y,paddle.w,paddle.h);ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);ctx.fillStyle=cfg.secondaryColor;ctx.fill();if(ball.y>H)return end('Game over — score '+score);if(bricks.every(b=>!b.alive))return end('Cleared! score '+score);requestAnimationFrame(loop)})()
+}else if(cfg.template==='pong'){
+ hintEl.textContent='Arrow Up / Down or mouse · first to 7 wins';
+ const p={x:16,y:H/2-30,w:10,h:60},cpu={x:W-26,y:H/2-30,w:10,h:60},ball={x:W/2,y:H/2,r:7,vx:4,vy:3};let cpuScore=0;
+ canvas.onmousemove=e=>{const r=canvas.getBoundingClientRect(),my=(e.clientY-r.top)*H/r.height;p.y=Math.max(0,Math.min(H-p.h,my-p.h/2));};
+ (function loop(){if(!running)return;if(keys.ArrowUp)p.y-=6;if(keys.ArrowDown)p.y+=6;p.y=Math.max(0,Math.min(H-p.h,p.y));cpu.y+=Math.sign(ball.y-(cpu.y+cpu.h/2))*Math.min(4.4,Math.abs(ball.y-(cpu.y+cpu.h/2)));ball.x+=ball.vx;ball.y+=ball.vy;if(ball.y<ball.r||ball.y>H-ball.r)ball.vy*=-1;if(ball.x-ball.r<p.x+p.w&&ball.y>p.y&&ball.y<p.y+p.h&&ball.vx<0)ball.vx*=-1.05;if(ball.x+ball.r>cpu.x&&ball.y>cpu.y&&ball.y<cpu.y+cpu.h&&ball.vx>0)ball.vx*=-1.05;if(ball.x<0){cpuScore++;ball.x=W/2;ball.y=H/2;ball.vx=4}if(ball.x>W){setScore(score+1);ball.x=W/2;ball.y=H/2;ball.vx=-4}ctx.clearRect(0,0,W,H);ctx.fillStyle=cfg.primaryColor;ctx.fillRect(p.x,p.y,p.w,p.h);ctx.fillStyle=cfg.secondaryColor;ctx.fillRect(cpu.x,cpu.y,cpu.w,cpu.h);ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);ctx.fill();ctx.fillStyle='#9C8F92';ctx.font='16px monospace';ctx.textAlign='center';ctx.fillText(score+' · '+cpuScore,W/2,24);if(score>=7||cpuScore>=7)return end(score>=7?'You win '+score+'–'+cpuScore:'CPU wins '+cpuScore+'–'+score);requestAnimationFrame(loop)})()
+}else{
+ hintEl.textContent='Space or Arrow Up · jump over obstacles';
+ const player={x:60,y:H-70,w:26,h:30,vy:0,onGround:true};window.player=player;let obs=[],spawn=0,speed=5,t=0;
+ (function loop(){if(!running)return;speed+=.002;player.vy+=.7;player.y+=player.vy;if(player.y>H-70){player.y=H-70;player.vy=0;player.onGround=true}if(--spawn<=0){spawn=60+Math.random()*50;obs.push({x:W+10,y:H-64,w:16,h:24})}obs.forEach(o=>o.x-=speed);obs=obs.filter(o=>o.x+o.w>0);if(++t%5===0)setScore(score+1);if(obs.some(o=>player.x<o.x+o.w&&player.x+player.w>o.x&&player.y<o.y+o.h&&player.y+player.h>o.y))return end('Game over — score '+score);ctx.clearRect(0,0,W,H);ctx.fillStyle=cfg.primaryColor;ctx.fillRect(player.x,player.y,player.w,player.h);ctx.fillStyle=cfg.secondaryColor;obs.forEach(o=>ctx.fillRect(o.x,o.y,o.w,o.h));requestAnimationFrame(loop)})()
+}
+<\/script></body></html>`;
+  const blob=new Blob([gameHtml],{type:'text/html'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=(currentSpec.title||'yuji-ai-game').replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').toLowerCase()+'.html';
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+document.getElementById('downloadGameBtn').addEventListener('click', downloadCurrentGame);
+
+document.getElementById('backToGridBtn').addEventListener('click', ()=>{
+  stopActiveGame();
+  document.getElementById('gameStage').classList.remove('show');
+  document.getElementById('projectsGridWrap').style.display='block';
+});
+/* ---------- game engine ---------- */
+let currentSpec=null, activeStop=null;
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const scoreboardEl = document.getElementById('gameScoreboard');
+const hintEl = document.getElementById('gameHint');
+function stopActiveGame(){
+  if(activeStop){ activeStop(); activeStop=null; }
+}
+function resetGameUI(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  scoreboardEl.textContent='score 0';
+  const hints = {
+    catcher:'← → or mouse to move · catch the falling '+((currentSpec&&currentSpec.targetLabel)||'item'),
+    breakout:'← → or mouse to move · break every brick',
+    pong:'← → or mouse to move · first to 7 wins',
+    runner:'space or ↑ to jump · survive as long as you can'
+  };
+  hintEl.textContent = currentSpec? hints[currentSpec.template] : '';
+}
+document.getElementById('resetBtn').addEventListener('click', ()=>{ stopActiveGame(); resetGameUI(); });
+document.getElementById('playBtn').addEventListener('click', ()=>{
+  if(!currentSpec) return;
+  stopActiveGame();
+  activeStop = Games[currentSpec.template](ctx, canvas, currentSpec, (score)=>{ scoreboardEl.textContent='score '+score; });
+});
+const Games = {};
+Games.catcher = function(ctx, canvas, cfg, onScore){
+  let running=true, score=0, lives=3;
+  const W=canvas.width,H=canvas.height;
+  const player={w:80,h:14,x:W/2-40,y:H-26,speed:7};
+  let keys={};
+  let items=[];
+  let spawnTimer=0;
+  function kd(e){keys[e.key]=true;}
+  function ku(e){keys[e.key]=false;}
+  function mm(e){
+    const rect=canvas.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*(canvas.width/rect.width);
+    player.x = Math.max(0, Math.min(W-player.w, mx-player.w/2));
+  }
+  window.addEventListener('keydown',kd); window.addEventListener('keyup',ku);
+  canvas.addEventListener('mousemove',mm);
+  function loop(){
+    if(!running) return;
+    if(keys['ArrowLeft']) player.x-=player.speed;
+    if(keys['ArrowRight']) player.x+=player.speed;
+    player.x=Math.max(0,Math.min(W-player.w,player.x));
+    spawnTimer++;
+    if(spawnTimer>45){ spawnTimer=0; items.push({x:Math.random()*(W-16),y:-16,r:8,v:2+Math.random()*2.5}); }
+    items.forEach(it=>it.y+=it.v);
+    items = items.filter(it=>{
+      if(it.y>H){ lives--; return false; }
+      if(it.y+it.r>player.y && it.x>player.x-it.r && it.x<player.x+player.w+it.r){ score++; onScore(score); return false; }
+      return true;
+    });
+    if(lives<=0){ running=false; ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(0,0,W,H); ctx.fillStyle='#fff'; ctx.font='20px monospace'; ctx.textAlign='center'; ctx.fillText('Game over — score '+score,W/2,H/2); return; }
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle=cfg.primaryColor;
+    ctx.fillRect(player.x,player.y,player.w,player.h);
+    ctx.fillStyle=cfg.secondaryColor;
+    items.forEach(it=>{ ctx.beginPath(); ctx.arc(it.x,it.y,it.r,0,Math.PI*2); ctx.fill(); });
+    ctx.fillStyle='#9C8F92'; ctx.font='12px monospace'; ctx.textAlign='left';
+    ctx.fillText('lives '+lives,10,20);
+    requestAnimationFrame(loop);
+  }
+  loop();
+  return ()=>{ running=false; window.removeEventListener('keydown',kd); window.removeEventListener('keyup',ku); canvas.removeEventListener('mousemove',mm); };
+};
+Games.breakout = function(ctx, canvas, cfg, onScore){
+  let running=true, score=0;
+  const W=canvas.width,H=canvas.height;
+  const paddle={w:90,h:12,x:W/2-45,y:H-24,speed:8};
+  const ball={x:W/2,y:H-40,r:7,vx:3.4,vy:-4};
+  let keys={};
+  const cols=8,rows=4,bw=(W-20)/cols,bh=18;
+  let bricks=[];
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) bricks.push({x:10+c*bw,y:40+r*(bh+6),w:bw-6,h:bh,alive:true});
+  function kd(e){keys[e.key]=true;} function ku(e){keys[e.key]=false;}
+  function mm(e){
+    const rect=canvas.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*(canvas.width/rect.width);
+    paddle.x = Math.max(0, Math.min(W-paddle.w, mx-paddle.w/2));
+  }
+  window.addEventListener('keydown',kd); window.addEventListener('keyup',ku);
+  canvas.addEventListener('mousemove',mm);
+  function loop(){
+    if(!running) return;
+    if(keys['ArrowLeft']) paddle.x-=paddle.speed;
+    if(keys['ArrowRight']) paddle.x+=paddle.speed;
+    paddle.x=Math.max(0,Math.min(W-paddle.w,paddle.x));
+    ball.x+=ball.vx; ball.y+=ball.vy;
+    if(ball.x<ball.r||ball.x>W-ball.r) ball.vx*=-1;
+    if(ball.y<ball.r) ball.vy*=-1;
+    if(ball.y+ball.r>paddle.y && ball.y+ball.r<paddle.y+paddle.h && ball.x>paddle.x && ball.x<paddle.x+paddle.w){ ball.vy=-Math.abs(ball.vy); }
+    bricks.forEach(b=>{
+      if(!b.alive) return;
+      if(ball.x>b.x && ball.x<b.x+b.w && ball.y-ball.r<b.y+b.h && ball.y+ball.r>b.y){
+        b.alive=false; ball.vy*=-1; score++; onScore(score);
+      }
+    });
+    let gameOver=false, won=bricks.every(b=>!b.alive);
+    if(ball.y>H) gameOver=true;
+    ctx.clearRect(0,0,W,H);
+    bricks.forEach(b=>{ if(b.alive){ ctx.fillStyle=cfg.primaryColor; ctx.fillRect(b.x,b.y,b.w,b.h); } });
+    ctx.fillStyle=cfg.primaryColor; ctx.fillRect(paddle.x,paddle.y,paddle.w,paddle.h);
+    ctx.beginPath(); ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2); ctx.fillStyle=cfg.secondaryColor; ctx.fill();
+    if(gameOver||won){
+      running=false;
+      ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#fff'; ctx.font='20px monospace'; ctx.textAlign='center';
+      ctx.fillText(won? 'Cleared! score '+score : 'Game over — score '+score, W/2, H/2);
+      return;
+    }
+    requestAnimationFrame(loop);
+  }
+  loop();
+  return ()=>{ running=false; window.removeEventListener('keydown',kd); window.removeEventListener('keyup',ku); canvas.removeEventListener('mousemove',mm); };
+};
+Games.pong = function(ctx, canvas, cfg, onScore){
+  let running=true;
+  const W=canvas.width,H=canvas.height;
+  const p1={x:16,y:H/2-30,w:10,h:60,speed:6};
+  const cpu={x:W-26,y:H/2-30,w:10,h:60,speed:4.4};
+  const ball={x:W/2,y:H/2,r:7,vx:4,vy:3};
+  let score=0, cpuScore=0;
+  let keys={};
+  function kd(e){keys[e.key]=true;} function ku(e){keys[e.key]=false;}
+  function mm(e){
+    const rect=canvas.getBoundingClientRect();
+    const my=(e.clientY-rect.top)*(canvas.height/rect.height);
+    p1.y = Math.max(0, Math.min(H-p1.h, my-p1.h/2));
+  }
+  window.addEventListener('keydown',kd); window.addEventListener('keyup',ku);
+  canvas.addEventListener('mousemove',mm);
+  function loop(){
+    if(!running) return;
+    if(keys['ArrowUp']) p1.y-=p1.speed;
+    if(keys['ArrowDown']) p1.y+=p1.speed;
+    p1.y=Math.max(0,Math.min(H-p1.h,p1.y));
+    const target = ball.y - cpu.h/2;
+    cpu.y += Math.sign(target-cpu.y)*Math.min(cpu.speed, Math.abs(target-cpu.y));
+    cpu.y=Math.max(0,Math.min(H-cpu.h,cpu.y));
+    ball.x+=ball.vx; ball.y+=ball.vy;
+    if(ball.y<ball.r||ball.y>H-ball.r) ball.vy*=-1;
+    if(ball.x-ball.r<p1.x+p1.w && ball.y>p1.y && ball.y<p1.y+p1.h && ball.vx<0) ball.vx*=-1.05;
+    if(ball.x+ball.r>cpu.x && ball.y>cpu.y && ball.y<cpu.y+cpu.h && ball.vx>0) ball.vx*=-1.05;
+    if(ball.x<0){ cpuScore++; ball.x=W/2; ball.y=H/2; ball.vx=4; }
+    if(ball.x>W){ score++; onScore(score); ball.x=W/2; ball.y=H/2; ball.vx=-4; }
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.setLineDash([6,8]);
+    ctx.beginPath(); ctx.moveTo(W/2,0); ctx.lineTo(W/2,H); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle=cfg.primaryColor; ctx.fillRect(p1.x,p1.y,p1.w,p1.h);
+    ctx.fillStyle=cfg.secondaryColor; ctx.fillRect(cpu.x,cpu.y,cpu.w,cpu.h);
+    ctx.beginPath(); ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2); ctx.fill();
+    ctx.font='16px monospace'; ctx.textAlign='center'; ctx.fillStyle='#9C8F92';
+    ctx.fillText(score+' · '+cpuScore, W/2, 24);
+    if(score>=7||cpuScore>=7){
+      running=false;
+      ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#fff'; ctx.font='20px monospace';
+      ctx.fillText(score>=7? 'You win '+score+'–'+cpuScore : 'CPU wins '+cpuScore+'–'+score, W/2, H/2);
+      return;
+    }
+    requestAnimationFrame(loop);
+  }
+  loop();
+  return ()=>{ running=false; window.removeEventListener('keydown',kd); window.removeEventListener('keyup',ku); canvas.removeEventListener('mousemove',mm); };
+};
+Games.runner = function(ctx, canvas, cfg, onScore){
+  let running=true, score=0, dead=false;
+  const W=canvas.width,H=canvas.height;
+  const groundY=H-40;
+  const player={x:60,y:groundY-30,w:26,h:30,vy:0,onGround:true};
+  const gravity=0.7, jumpV=-12;
+  let obstacles=[]; let spawnTimer=0; let speed=5;
+  let keys={};
+  function kd(e){
+    keys[e.key]=true;
+    if((e.key===' '||e.key==='ArrowUp') && player.onGround){ player.vy=jumpV; player.onGround=false; }
+  }
+  function ku(e){keys[e.key]=false;}
+  window.addEventListener('keydown',kd); window.addEventListener('keyup',ku);
+  function loop(){
+    if(!running) return;
+    if(!dead){
+      speed += 0.002;
+      player.vy+=gravity; player.y+=player.vy;
+      if(player.y>groundY-player.h){ player.y=groundY-player.h; player.vy=0; player.onGround=true; }
+      spawnTimer--;
+      if(spawnTimer<=0){ spawnTimer=60+Math.random()*50; obstacles.push({x:W+10,y:groundY-24,w:16,h:24}); }
+      obstacles.forEach(o=>o.x-=speed);
+      obstacles=obstacles.filter(o=>o.x+o.w>0);
+      obstacles.forEach(o=>{
+        if(player.x<o.x+o.w && player.x+player.w>o.x && player.y<o.y+o.h && player.y+player.h>o.y){ dead=true; }
+      });
+      score++; if(score%5===0) onScore(Math.floor(score/5));
+    }
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.beginPath(); ctx.moveTo(0,groundY); ctx.lineTo(W,groundY); ctx.stroke();
+    ctx.fillStyle=cfg.primaryColor; ctx.fillRect(player.x,player.y,player.w,player.h);
+    ctx.fillStyle=cfg.secondaryColor;
+    obstacles.forEach(o=>ctx.fillRect(o.x,o.y,o.w,o.h));
+    ctx.fillStyle='#9C8F92'; ctx.font='12px monospace'; ctx.textAlign='left';
+    ctx.fillText('score '+Math.floor(score/5),10,20);
+    if(dead){
+      running=false;
+      ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#fff'; ctx.font='20px monospace'; ctx.textAlign='center';
+      ctx.fillText('Game over — score '+Math.floor(score/5), W/2, H/2);
+      return;
+    }
+    requestAnimationFrame(loop);
+  }
+  loop();
+  return ()=>{ running=false; window.removeEventListener('keydown',kd); window.removeEventListener('keyup',ku); };
+};
+/* ================= init ================= */
+(async function init(){
+  await refreshChatList();
+  await refreshKeys();
+  await refreshProjectsGrid();
+  await refreshPlanChip();
+  await refreshPlanView();
+})();
+</script>
+</body>
+</html>
